@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Avatar, Badge, Button, Card, Input, Spinner } from '@/components/ui';
-import { CSSVerification } from '@/components/dev/CssVerification';
+import { CSSVerification } from '@/components/dev/CSSVerification';
 import { ResponsiveTest } from '@/components/dev/ResponsiveText';
 
 const App = () => {
