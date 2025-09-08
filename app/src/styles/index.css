@@ -1,0 +1,88 @@
+/* Paperwurks CSS - Light Theme
+   Import Order: Variables → Base → Components → Utilities
+   This ensures proper cascade and specificity */
+
+/* Design Tokens & Variables */
+@import './variables.css';
+
+/* Base Styles & Reset */
+@import './base.css';
+
+/* Component Styles */
+@import './components.css';
+
+/* Utility Classes */
+@import './utilities.css';
+
+/* Additional App-Specific Overrides */
+/* Add any custom overrides or app-specific styles below */
+
+/* Focus ring improvements for better accessibility */
+*:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* High contrast focus for form elements */
+.form-input:focus-visible,
+.form-select:focus-visible,
+.form-textarea:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 0;
+}
+
+/* Improved button focus states */
+.btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Ensure proper stacking context for modals */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+}
+
+/* Print optimizations */
+@media print {
+  .header,
+  .modal-overlay,
+  .btn,
+  .nav {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color: inherit; /* Use inherit to maintain the original color */
+  }
+  
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl {
+    box-shadow: none !important;
+  }
+}
