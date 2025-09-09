@@ -5,7 +5,7 @@ import {
   removeStorageItem,
 } from '@/utils/storage/localStorage';
 import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
-import type { AuthTokens } from '@/services/auth';
+import type { AuthTokens } from '@/types/auth';
 import { logger } from '@/utils/logger';
 
 /**
@@ -100,6 +100,10 @@ export class TokenService {
     try {
       const expDate = new Date(expirationDate);
       const now = new Date();
+
+      if (isNaN(expDate.getTime())) {
+        return true;
+      }
 
       // Add 5-minute buffer before actual expiration
       const bufferTime = 5 * 60 * 1000;

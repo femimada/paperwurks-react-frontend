@@ -13,18 +13,6 @@ vi.mock('@/services/api', () => ({
   },
 }));
 
-// Mock the token service
-vi.mock('../tokenService', () => ({
-  TokenService: {
-    setTokens: vi.fn(),
-    getAccessToken: vi.fn(),
-    getRefreshToken: vi.fn(),
-    clearTokens: vi.fn(),
-    hasValidTokens: vi.fn(),
-    isTokenExpired: vi.fn(),
-  },
-}));
-
 describe('AuthService', () => {
   let authService: AuthService;
 
