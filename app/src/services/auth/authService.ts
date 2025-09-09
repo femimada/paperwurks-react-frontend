@@ -178,6 +178,3 @@ export class AuthService {
     }
   }
 }
-
-// Create singleton instance
-export const authService = new AuthService();
