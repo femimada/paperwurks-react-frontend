@@ -12,6 +12,7 @@ import {
 } from '@/utils/storage/localStorage';
 import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
 import { logger } from '@/utils/logger';
+import { TokenService } from '../auth/tokenService';
 
 /**
  * Request interceptor to add auth token
@@ -88,6 +89,7 @@ const responseErrorInterceptor = async (error: AxiosError) => {
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
+      TokenService.clearTokens();
     }
 
     // Handle forbidden errors
