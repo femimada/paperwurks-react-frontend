@@ -9,16 +9,16 @@ const App = () => {
   >('components');
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8">
-        <h1 className="text-4xl font-bold text-primary mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">
           Paperwurks CSS Integration Test
         </h1>
 
         {/* Tab Navigation */}
         <div className="mb-8">
-          <div className="border-b border-primary">
-            <nav className="-mb-px flex space-x-8">
+          <div className="border-b border-gray-200">
+            <nav className="flex gap-8">
               {[
                 { id: 'components' as const, label: 'UI Components' },
                 { id: 'verification' as const, label: 'CSS Verification' },
@@ -27,10 +27,10 @@ const App = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-secondary hover:text-primary hover:border-secondary'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   {tab.label}
@@ -42,10 +42,10 @@ const App = () => {
 
         {/* Tab Content */}
         {activeTab === 'components' && (
-          <div className="space-y-8">
+          <div className="flex flex-col gap-8">
             {/* Button Testing */}
-            <Card header={<h2 className="text-xl font-semibold">Buttons</h2>}>
-              <div className="d-flex gap-4 flex-wrap">
+            <Card header={<h2 className="card__title">Buttons</h2>}>
+              <div className="flex gap-4 flex-wrap mb-4">
                 <Button variant="primary">Primary</Button>
                 <Button variant="secondary">Secondary</Button>
                 <Button variant="outline">Outline</Button>
@@ -56,7 +56,7 @@ const App = () => {
                 </Button>
               </div>
 
-              <div className="d-flex gap-4 flex-wrap mt-4">
+              <div className="flex gap-4 flex-wrap">
                 <Button size="sm">Small</Button>
                 <Button size="base">Base</Button>
                 <Button size="lg">Large</Button>
@@ -64,7 +64,7 @@ const App = () => {
             </Card>
 
             {/* Input Testing */}
-            <Card header={<h2 className="text-xl font-semibold">Inputs</h2>}>
+            <Card header={<h2 className="card__title">Inputs</h2>}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input label="Basic Input" placeholder="Enter text here" />
                 <Input
@@ -82,8 +82,8 @@ const App = () => {
             </Card>
 
             {/* Badge Testing */}
-            <Card header={<h2 className="text-xl font-semibold">Badges</h2>}>
-              <div className="d-flex gap-4 flex-wrap items-center">
+            <Card header={<h2 className="card__title">Badges</h2>}>
+              <div className="flex gap-4 flex-wrap items-center">
                 <Badge variant="success">Success</Badge>
                 <Badge variant="warning">Warning</Badge>
                 <Badge variant="error">Error</Badge>
@@ -96,8 +96,8 @@ const App = () => {
             </Card>
 
             {/* Avatar Testing */}
-            <Card header={<h2 className="text-xl font-semibold">Avatars</h2>}>
-              <div className="d-flex gap-4 flex-wrap items-center">
+            <Card header={<h2 className="card__title">Avatars</h2>}>
+              <div className="flex gap-4 flex-wrap items-center">
                 <Avatar fallback="JD" size="sm" />
                 <Avatar fallback="JD" size="base" />
                 <Avatar fallback="JD" size="lg" />
@@ -111,13 +111,13 @@ const App = () => {
             </Card>
 
             {/* Spinner Testing */}
-            <Card header={<h2 className="text-xl font-semibold">Spinners</h2>}>
-              <div className="d-flex gap-4 flex-wrap items-center">
+            <Card header={<h2 className="card__title">Spinners</h2>}>
+              <div className="flex gap-4 flex-wrap items-center">
                 <Spinner size="sm" />
                 <Spinner size="base" />
                 <Spinner size="lg" />
                 <Spinner size="xl" />
-                <Spinner color="var(--color-primary-600)" />
+                <Spinner color="blue-600" />
               </div>
             </Card>
           </div>
