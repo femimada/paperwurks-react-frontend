@@ -1,7 +1,7 @@
 // src/features/auth/hooks/useRegister.ts
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-//import type { Resolver } from 'react-hook-form';
+import { debounce } from 'lodash';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -110,6 +110,12 @@ const TermsAndOrgSchema = FullSchema.pick({
   acceptsMarketing: true,
 });
 
+const getKeysFromSchema = (
+  schema: z.ZodObject<any>
+): (keyof RegisterFormData)[] => {
+  return Object.keys(schema.shape) as (keyof RegisterFormData)[];
+};
+
 // Define the specific types for each step's schema
 type PersonalInfoSchemaType = z.infer<typeof PersonalInfoSchema>;
 type RoleSelectionSchemaType = z.infer<typeof RoleSelectionSchema>;
@@ -162,6 +168,7 @@ export interface UseRegisterReturn
 
   // State
   isSubmitting: boolean;
+  isNavigating: boolean;
 
   // Helper data
   roleOptions: Array<{
@@ -181,6 +188,12 @@ export const useRegister = (): UseRegisterReturn => {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<RegistrationStep>('personal');
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    feedback: [] as string[],
+    strength: 'weak' as 'weak' | 'medium' | 'strong',
+  });
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(FullSchema),
@@ -192,7 +205,7 @@ export const useRegister = (): UseRegisterReturn => {
       email: '',
       password: '',
       confirmPassword: '',
-      role: undefined as unknown as UserRole | undefined,
+      role: undefined,
       organizationName: '',
       organizationType: undefined,
       acceptsTerms: false,
@@ -203,10 +216,15 @@ export const useRegister = (): UseRegisterReturn => {
   const { formState, handleSubmit, register, watch, setValue, trigger } = form;
   const watchedValues = watch();
 
+  // Clear errors and trigger validation on step change
   useEffect(() => {
     form.reset(undefined, { keepValues: true, keepDirty: true });
     form.clearErrors();
-    trigger(); // Validate new step
+    const currentStepSchema = getSchemaForStep(currentStep);
+    const fieldsToValidate = getKeysFromSchema(
+      currentStepSchema as z.ZodObject<any>
+    );
+    trigger(fieldsToValidate as any);
   }, [currentStep, form, trigger]);
 
   // Step management
@@ -235,70 +253,87 @@ export const useRegister = (): UseRegisterReturn => {
   );
 
   // password strength (synchronous)
-  const passwordStrength = useMemo(() => {
-    const password = (watchedValues.password as string) || '';
+  const calculatePasswordStrength = (password: string) => {
     let score = 0;
     const feedback: string[] = [];
-
+    // ... (your existing password strength logic) ...
     if (password.length >= 8) score++;
     else if (password.length > 0) feedback.push('At least 8 characters');
-
     if (/[a-z]/.test(password)) score++;
     else if (password.length > 0) feedback.push('One lowercase letter');
-
     if (/[A-Z]/.test(password)) score++;
     else if (password.length > 0) feedback.push('One uppercase letter');
-
     if (/\d/.test(password)) score++;
     else if (password.length > 0) feedback.push('One number');
-
     if (/[^A-Za-z0-9]/.test(password)) score++;
 
     let strength: 'weak' | 'medium' | 'strong';
     if (score <= 2) strength = 'weak';
     else if (score <= 3) strength = 'medium';
     else strength = 'strong';
-
     return { score, feedback, strength };
-  }, [watchedValues.password]);
+  };
+
+  const debouncedSetPasswordStrength = useMemo(
+    () =>
+      debounce((password: string) => {
+        setPasswordStrength(calculatePasswordStrength(password));
+      }, 300),
+    []
+  );
+
+  useEffect(() => {
+    debouncedSetPasswordStrength(watchedValues.password || '');
+  }, [watchedValues.password, debouncedSetPasswordStrength]);
 
   // Validate only current step (sync)
   const validateCurrentStep = useCallback(async (): Promise<boolean> => {
     const schema = getSchemaForStep(currentStep);
     const result = schema.safeParse(watchedValues);
+    if (!result.success) {
+      // Map Zod errors to RHF errors
+      result.error.issues.forEach((issue) => {
+        form.setError(issue.path.join('.') as keyof RegisterFormData, {
+          type: 'manual',
+          message: issue.message,
+        });
+      });
+    }
     return result.success;
-  }, [currentStep, watchedValues]);
+  }, [currentStep, watchedValues, form]);
 
-  // canProceed computed synchronously
+  // Can proceed
   const canProceed = useMemo(() => {
     const schema = getSchemaForStep(currentStep);
     const result = schema.safeParse(watchedValues);
-    if (!result.success) return false;
-
-    if (currentStep === 'terms' && requiresOrganization) {
-      const ok = !!(
-        watchedValues.organizationName?.trim() && watchedValues.organizationType
-      );
-      return ok;
-    }
-
-    return true;
-  }, [currentStep, watchedValues, requiresOrganization]);
+    return result.success;
+  }, [currentStep, watchedValues]);
 
   // navigation
   const nextStep = useCallback(async (): Promise<void> => {
-    if (isLastStep) return;
-    const isValid = await validateCurrentStep();
-    if (!isValid) {
-      await trigger();
-      return;
+    if (isLastStep || isNavigating) return;
+    setIsNavigating(true);
+    try {
+      const currentStepSchema = getSchemaForStep(currentStep);
+      const validationResult = currentStepSchema.safeParse(watchedValues);
+
+      if (!validationResult.success) {
+        await trigger(getKeysFromSchema(currentStepSchema as z.ZodObject<any>));
+        return;
+      }
+
+      setCurrentStep(STEPS[currentStepIndex + 1]);
+    } finally {
+      setIsNavigating(false);
     }
-    setCurrentStep(STEPS[currentStepIndex + 1]);
-    logger.debug('Moved to next registration step', {
-      from: currentStep,
-      to: STEPS[currentStepIndex + 1],
-    });
-  }, [currentStep, currentStepIndex, isLastStep, trigger, validateCurrentStep]);
+  }, [
+    currentStep,
+    currentStepIndex,
+    isLastStep,
+    trigger,
+    watchedValues,
+    isNavigating,
+  ]);
 
   const prevStep = useCallback(() => {
     if (!isFirstStep) {
@@ -313,20 +348,23 @@ export const useRegister = (): UseRegisterReturn => {
   const goToStep = useCallback(
     async (step: RegistrationStep) => {
       const targetIndex = STEPS.indexOf(step);
-      if (targetIndex < 0) return;
+      if (targetIndex < 0 || isNavigating) return;
 
       if (targetIndex > currentStepIndex) {
-        // require current step valid before jumping forward
-        const ok = await validateCurrentStep();
-        if (!ok) {
-          await trigger();
+        const currentStepSchema = getSchemaForStep(currentStep);
+        const validationResult = currentStepSchema.safeParse(form.getValues());
+
+        if (!validationResult.success) {
+          await trigger(
+            getKeysFromSchema(currentStepSchema as z.ZodObject<any>)
+          );
           return;
         }
       }
+      form.clearErrors();
       setCurrentStep(step);
-      logger.debug('Jumped to registration step', { to: step });
     },
-    [currentStepIndex, trigger, validateCurrentStep]
+    [currentStep, currentStepIndex, form, isNavigating]
   );
 
   // submission
@@ -342,7 +380,7 @@ export const useRegister = (): UseRegisterReturn => {
         if (requiresOrganization) {
           organization = {
             name: (data.organizationName || '').trim(),
-            type: data.organizationType ?? 'property_company',
+            type: data.organizationType,
           };
         }
 
@@ -402,6 +440,7 @@ export const useRegister = (): UseRegisterReturn => {
     validateCurrentStep,
 
     isSubmitting: formState.isSubmitting,
+    isNavigating,
 
     roleOptions,
     requiresOrganization,
