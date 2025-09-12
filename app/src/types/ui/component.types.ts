@@ -1,6 +1,11 @@
 // Component prop types and UI-related interfaces
 
-import type { ReactNode, HTMLAttributes, ButtonHTMLAttributes, InputHTMLAttributes } from 'react';
+import type {
+  ReactNode,
+  HTMLAttributes,
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+} from 'react';
 
 /**
  * Base component props that all components can extend
@@ -19,7 +24,12 @@ export type ComponentSize = 'sm' | 'base' | 'lg' | 'xl';
 /**
  * Component variants for styling
  */
-export type ComponentVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+export type ComponentVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'ghost'
+  | 'danger';
 
 /**
  * Loading states
@@ -29,7 +39,9 @@ export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 /**
  * Button component props
  */
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, BaseComponentProps {
+export interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
+    BaseComponentProps {
   variant?: ComponentVariant;
   size?: ComponentSize;
   loading?: boolean;
@@ -40,18 +52,24 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Ba
 /**
  * Input component props
  */
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement>, BaseComponentProps {
+export interface InputProps
+  extends InputHTMLAttributes<HTMLInputElement>,
+    BaseComponentProps {
   label?: string;
   error?: string;
   helperText?: string;
   icon?: ReactNode;
   iconPosition?: 'left' | 'right';
+  ref?: React.Ref<HTMLInputElement>;
+  rightIcon?: React.ReactNode;
 }
 
 /**
  * Card component props
  */
-export interface CardProps extends HTMLAttributes<HTMLDivElement>, BaseComponentProps {
+export interface CardProps
+  extends HTMLAttributes<HTMLDivElement>,
+    BaseComponentProps {
   header?: ReactNode;
   footer?: ReactNode;
   padding?: ComponentSize;

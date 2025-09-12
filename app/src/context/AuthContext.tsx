@@ -5,6 +5,7 @@ import React, {
   useReducer,
   useEffect,
   useCallback,
+  useMemo,
 } from 'react';
 import { authService, TokenService } from '@/services/auth';
 import { logger } from '@/utils/logger';
@@ -371,27 +372,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 
   // Context value
-  const contextValue: AuthContextValue = {
-    // State
-    ...state,
+  const contextValue = useMemo(
+    () => ({
+      // State
+      ...state,
 
-    // Actions
-    login,
-    register,
-    logout,
-    refreshToken,
-    forgotPassword,
-    resetPassword,
-    changePassword,
-    updateProfile,
-    clearError,
+      // Actions
+      login,
+      register,
+      logout,
+      refreshToken,
+      forgotPassword,
+      resetPassword,
+      changePassword,
+      updateProfile,
+      clearError,
 
-    // Permission helpers
-    hasPermission,
-    hasRole,
-    hasAnyPermission,
-    isRole,
-  };
+      // Permission helpers
+      hasPermission,
+      hasRole,
+      hasAnyPermission,
+      isRole,
+    }),
+
+    [
+      state,
+      login,
+      register,
+      logout,
+      refreshToken,
+      forgotPassword,
+      resetPassword,
+      changePassword,
+      updateProfile,
+      clearError,
+      hasPermission,
+      hasRole,
+      hasAnyPermission,
+      isRole,
+    ]
+  );
 
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

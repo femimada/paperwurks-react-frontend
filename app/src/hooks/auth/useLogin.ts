@@ -1,19 +1,18 @@
 // src/features/auth/hooks/useLogin.ts
-import { useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useState } from 'react';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
-//import type { LoginFormData } from '@/types/auth';
 
 // Validation schema for login form
 const LoginSchema = z.object({
   email: z
     .string()
-    .email('Please enter a valid email address')
-    .min(1, 'Email is required'),
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
   password: z
     .string()
     .min(1, 'Password is required')
@@ -25,16 +24,13 @@ export type LoginFormData = z.input<typeof LoginSchema>;
 export type LoginData = z.output<typeof LoginSchema>;
 
 // Form return type
-export interface UseLoginReturn {
-  // Form methods
-  register: ReturnType<typeof useForm<LoginFormData>>['register'];
-  handleSubmit: ReturnType<typeof useForm<LoginFormData>>['handleSubmit'];
-  formState: ReturnType<typeof useForm<LoginFormData>>['formState'];
-  reset: ReturnType<typeof useForm<LoginFormData>>['reset'];
-
+export interface UseLoginReturn
+  extends Pick<
+    UseFormReturn<LoginFormData>,
+    'register' | 'handleSubmit' | 'formState' | 'reset'
+  > {
   // Custom handlers
   onSubmit: (data: LoginFormData) => Promise<void>;
-
   // State
   isSubmitting: boolean;
 }
@@ -50,6 +46,7 @@ export const useLogin = (): UseLoginReturn => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -63,11 +60,18 @@ export const useLogin = (): UseLoginReturn => {
 
   const { formState, handleSubmit, register, reset } = form;
 
+  useEffect(() => {
+    if (formState.errors.email || formState.errors.password) {
+      logger.debug('Validation errors set:', formState.errors);
+    }
+  }, [formState.errors]);
+
   /**
    * Handle form submission
    */
   const onSubmit = useCallback(
     async (data: LoginFormData): Promise<void> => {
+      setIsProcessing(true);
       try {
         logger.debug('Login attempt started', { email: data.email });
 
@@ -90,9 +94,8 @@ export const useLogin = (): UseLoginReturn => {
           email: data.email,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
-
-        // Error is already handled by AuthContext and will be displayed in UI
-        // We don't need to do anything else here
+      } finally {
+        setIsProcessing(false);
       }
     },
     [login, navigate, location.state]
@@ -109,6 +112,6 @@ export const useLogin = (): UseLoginReturn => {
     onSubmit,
 
     // Loading state
-    isSubmitting: formState.isSubmitting,
+    isSubmitting: formState.isSubmitting || isProcessing,
   };
 };

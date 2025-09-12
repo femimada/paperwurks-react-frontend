@@ -1,6 +1,7 @@
 // src/features/auth/components/__tests__/LoginForm.test.tsx
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
@@ -51,56 +52,44 @@ describe('LoginForm', () => {
       </TestWrapper>
     );
 
-    // Check form elements are present
     expect(screen.getByText('Sign in to your account')).toBeInTheDocument();
     expect(screen.getByTestId('email-input')).toBeInTheDocument();
     expect(screen.getByTestId('password-input')).toBeInTheDocument();
     expect(screen.getByTestId('remember-me-checkbox')).toBeInTheDocument();
     expect(screen.getByTestId('login-submit-button')).toBeInTheDocument();
-
-    // Check links are present
     expect(screen.getByTestId('forgot-password-link')).toBeInTheDocument();
     expect(screen.getByTestId('register-link')).toBeInTheDocument();
+    expect(screen.getByTestId('password-toggle-button')).toBeInTheDocument();
   });
 
   it('should show validation errors for empty fields', async () => {
-    const user = userEvent.setup();
-
     render(
       <TestWrapper>
-        <LoginForm />
+        <LoginForm testId="login-form" />
       </TestWrapper>
     );
 
-    const submitButton = screen.getByTestId('login-submit-button');
+    const form = screen.getByTestId('login-form');
+    fireEvent.submit(form);
 
-    // Try to submit empty form
-    await user.click(submitButton);
-
-    // Should show validation errors
     await waitFor(() => {
       expect(screen.getByText('Email is required')).toBeInTheDocument();
       expect(screen.getByText('Password is required')).toBeInTheDocument();
     });
 
-    // Submit button should be disabled
-    expect(submitButton).toBeDisabled();
+    expect(screen.getByTestId('login-submit-button')).toBeDisabled();
   });
 
   it('should show validation error for invalid email', async () => {
     const user = userEvent.setup();
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
     const emailInput = screen.getByTestId('email-input');
-
-    // Enter invalid email
     await user.type(emailInput, 'invalid-email');
-    await user.tab(); // Trigger validation
+    await user.tab();
 
     await waitFor(() => {
       expect(
@@ -111,18 +100,14 @@ describe('LoginForm', () => {
 
   it('should show validation error for short password', async () => {
     const user = userEvent.setup();
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
     const passwordInput = screen.getByTestId('password-input');
-
-    // Enter short password
     await user.type(passwordInput, '123');
-    await user.tab(); // Trigger validation
+    await user.tab();
 
     await waitFor(() => {
       expect(
@@ -145,37 +130,26 @@ describe('LoginForm', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-
     const mockTokens = {
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
       expiresAt: new Date(Date.now() + 3600000).toISOString(),
       tokenType: 'Bearer' as const,
     };
-
     const { authService } = await import('@/services/auth');
     vi.mocked(authService.login).mockResolvedValue({
       user: mockUser,
       tokens: mockTokens,
     });
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
-    // Fill in valid credentials
     await user.type(screen.getByTestId('email-input'), 'test@example.com');
     await user.type(screen.getByTestId('password-input'), 'password123');
-
-    // Check remember me
     await user.click(screen.getByTestId('remember-me-checkbox'));
-
-    // Submit form
     await user.click(screen.getByTestId('login-submit-button'));
-
-    // Verify API was called with correct data
     await waitFor(() => {
       expect(authService.login).toHaveBeenCalledWith({
         email: 'test@example.com',
@@ -191,48 +165,39 @@ describe('LoginForm', () => {
     vi.mocked(authService.login).mockRejectedValue(
       new Error('Invalid credentials')
     );
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
-    // Fill in credentials
     await user.type(screen.getByTestId('email-input'), 'wrong@example.com');
     await user.type(screen.getByTestId('password-input'), 'wrongpassword');
-
-    // Submit form
     await user.click(screen.getByTestId('login-submit-button'));
 
-    // Should show error message
+    await screen.findByTestId('login-error');
+    expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
+
+    const dismissButton = screen.getByTestId('error-dismiss-button');
+    await user.click(dismissButton);
+
     await waitFor(() => {
-      expect(screen.getByTestId('login-error')).toBeInTheDocument();
-      expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
+      expect(screen.queryByTestId('login-error')).not.toBeInTheDocument();
     });
   });
 
   it('should toggle remember me checkbox', async () => {
     const user = userEvent.setup();
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
     const checkbox = screen.getByTestId(
       'remember-me-checkbox'
     ) as HTMLInputElement;
-
-    // Initially unchecked
     expect(checkbox.checked).toBe(false);
-
-    // Click to check
     await user.click(checkbox);
     expect(checkbox.checked).toBe(true);
-
-    // Click to uncheck
     await user.click(checkbox);
     expect(checkbox.checked).toBe(false);
   });
@@ -243,10 +208,7 @@ describe('LoginForm', () => {
         <LoginForm showCard={false} />
       </TestWrapper>
     );
-
-    // Should not have card styling
-    expect(screen.queryByText('Sign in to your account')).toBeInTheDocument();
-    // Check that card class is not present (this test assumes we can identify card styling)
+    expect(screen.getByText('Sign in to your account')).toBeInTheDocument();
   });
 
   it('should hide links when showLinks is false', () => {
@@ -255,8 +217,6 @@ describe('LoginForm', () => {
         <LoginForm showLinks={false} />
       </TestWrapper>
     );
-
-    // Links should not be present
     expect(
       screen.queryByTestId('forgot-password-link')
     ).not.toBeInTheDocument();
@@ -264,21 +224,16 @@ describe('LoginForm', () => {
   });
 
   it('should show demo credentials in development', () => {
-    // Mock NODE_ENV to be development
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
     expect(screen.getByText('Demo Credentials')).toBeInTheDocument();
     expect(screen.getByText('owner@test.com')).toBeInTheDocument();
     expect(screen.getByText('password123')).toBeInTheDocument();
-
-    // Restore original NODE_ENV
     process.env.NODE_ENV = originalEnv;
   });
 
@@ -288,31 +243,79 @@ describe('LoginForm', () => {
         <LoginForm />
       </TestWrapper>
     );
-
     const submitButton = screen.getByTestId('login-submit-button');
-
-    // Button should be disabled initially (empty form)
     expect(submitButton).toBeDisabled();
   });
 
   it('should enable submit button when form is valid', async () => {
     const user = userEvent.setup();
-
     render(
       <TestWrapper>
         <LoginForm />
       </TestWrapper>
     );
-
     const submitButton = screen.getByTestId('login-submit-button');
-
-    // Fill in valid data
     await user.type(screen.getByTestId('email-input'), 'test@example.com');
     await user.type(screen.getByTestId('password-input'), 'password123');
-
-    // Button should be enabled
     await waitFor(() => {
       expect(submitButton).not.toBeDisabled();
+    });
+  });
+
+  it('should toggle password visibility', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <LoginForm />
+      </TestWrapper>
+    );
+    const passwordInput = screen.getByTestId(
+      'password-input'
+    ) as HTMLInputElement;
+    const toggleButton = screen.getByTestId('password-toggle-button');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(toggleButton).toHaveAttribute('aria-label', 'Show password');
+    await user.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'text');
+    expect(toggleButton).toHaveAttribute('aria-label', 'Hide password');
+    await user.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(toggleButton).toHaveAttribute('aria-label', 'Show password');
+  });
+
+  it('should focus email input on validation error', async () => {
+    render(
+      <TestWrapper>
+        <LoginForm testId="login-form" />
+      </TestWrapper>
+    );
+    const emailInput = screen.getByTestId('email-input');
+    const form = screen.getByTestId('login-form');
+    fireEvent.submit(form);
+    await waitFor(() => {
+      expect(screen.getByText('Email is required')).toBeInTheDocument();
+      expect(document.activeElement).toBe(emailInput);
+    });
+  });
+
+  it('should announce error with aria-live', async () => {
+    const user = userEvent.setup();
+    const { authService } = await import('@/services/auth');
+    vi.mocked(authService.login).mockRejectedValue(
+      new Error('Invalid credentials')
+    );
+    render(
+      <TestWrapper>
+        <LoginForm />
+      </TestWrapper>
+    );
+    await user.type(screen.getByTestId('email-input'), 'wrong@example.com');
+    await user.type(screen.getByTestId('password-input'), 'wrongpassword');
+    await user.click(screen.getByTestId('login-submit-button'));
+    await waitFor(() => {
+      const errorAlert = screen.getByTestId('login-error');
+      expect(errorAlert).toHaveAttribute('aria-live', 'assertive');
+      expect(errorAlert).toHaveTextContent('Invalid credentials');
     });
   });
 });
