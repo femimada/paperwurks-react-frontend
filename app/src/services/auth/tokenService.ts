@@ -4,127 +4,75 @@ import {
   setStorageItem,
   removeStorageItem,
 } from '@/utils/storage/localStorage';
-import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
 import type { AuthTokens } from '@/types/auth';
-import { logger } from '@/utils/logger';
 
-/**
- * Service for managing authentication tokens
- */
 export class TokenService {
-  private static readonly TOKEN_KEY = LOCAL_STORAGE_KEYS.AUTH_TOKEN;
-  private static readonly REFRESH_KEY = LOCAL_STORAGE_KEYS.REFRESH_TOKEN;
+  private static ACCESS_TOKEN_KEY = 'accessToken';
+  private static REFRESH_TOKEN_KEY = 'refreshToken';
 
-  /**
-   * Store authentication tokens
-   */
   static setTokens(tokens: AuthTokens): void {
-    try {
-      setStorageItem(this.TOKEN_KEY, tokens.accessToken);
-      setStorageItem(this.REFRESH_KEY, tokens.refreshToken);
-
-      logger.debug('Tokens stored successfully');
-    } catch (error) {
-      logger.error('Failed to store tokens', error);
-      throw new Error('Failed to store authentication tokens');
-    }
+    setStorageItem(this.ACCESS_TOKEN_KEY, tokens.accessToken);
+    document.cookie = `refreshToken=${tokens.refreshToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=604800; Path=/`;
   }
 
-  /**
-   * Get stored access token
-   */
-  static getAccessToken(): string | null {
-    try {
-      return getStorageItem<string>(this.TOKEN_KEY);
-    } catch (error) {
-      logger.error('Failed to retrieve access token', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get stored refresh token
-   */
-  static getRefreshToken(): string | null {
-    try {
-      return getStorageItem<string>(this.REFRESH_KEY);
-    } catch (error) {
-      logger.error('Failed to retrieve refresh token', error);
-      return null;
-    }
-  }
-
-  /**
-   * Get both tokens
-   */
-  static getTokens(): {
-    accessToken: string | null;
-    refreshToken: string | null;
-  } {
+  static getTokens(): AuthTokens {
+    const accessToken = getStorageItem(this.ACCESS_TOKEN_KEY) as string | null;
+    const refreshToken = this.getRefreshToken() ?? '';
     return {
-      accessToken: this.getAccessToken(),
-      refreshToken: this.getRefreshToken(),
+      accessToken: accessToken ?? '',
+      refreshToken,
+      tokenType: 'Bearer',
+      expiresAt: '',
     };
   }
 
-  /**
-   * Remove all stored tokens
-   */
+  static getAccessToken(): string | null {
+    return getStorageItem(this.ACCESS_TOKEN_KEY);
+  }
+
+  static getRefreshToken(): string | null {
+    const cookies = document.cookie.split('; ').reduce(
+      (acc, cookie) => {
+        const [name, value] = cookie.split('=');
+        acc[name] = value;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+    return cookies[this.REFRESH_TOKEN_KEY] ?? null;
+  }
+
   static clearTokens(): void {
-    try {
-      removeStorageItem(this.TOKEN_KEY);
-      removeStorageItem(this.REFRESH_KEY);
-
-      logger.debug('Tokens cleared successfully');
-    } catch (error) {
-      logger.error('Failed to clear tokens', error);
-    }
+    removeStorageItem(this.ACCESS_TOKEN_KEY);
+    document.cookie =
+      'refreshToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/';
   }
 
-  /**
-   * Check if user has valid tokens
-   */
   static hasValidTokens(): boolean {
-    const accessToken = this.getAccessToken();
-    const refreshToken = this.getRefreshToken();
-
-    return !!(accessToken && refreshToken);
+    const { accessToken, refreshToken } = this.getTokens();
+    return !!accessToken && !!refreshToken;
   }
 
-  /**
-   * Check if access token is expired
-   */
-  static isTokenExpired(expirationDate?: string): boolean {
-    if (!expirationDate) return true;
-
+  static getTokenPayload(token: string | null): { exp?: number } | null {
+    if (!token) return null;
     try {
-      const expDate = new Date(expirationDate);
-      const now = new Date();
-
-      if (isNaN(expDate.getTime())) {
-        return true;
-      }
-
-      // Add 5-minute buffer before actual expiration
-      const bufferTime = 5 * 60 * 1000;
-      return expDate.getTime() - bufferTime <= now.getTime();
-    } catch (error) {
-      logger.error('Failed to check token expiration', error);
-      return true;
-    }
-  }
-
-  /**
-   * Get token expiration time in milliseconds
-   */
-  static getTokenExpirationTime(expirationDate?: string): number | null {
-    if (!expirationDate) return null;
-
-    try {
-      return new Date(expirationDate).getTime();
-    } catch (error) {
-      logger.error('Failed to parse token expiration date', error);
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload;
+    } catch {
       return null;
     }
+  }
+
+  static isTokenExpired(token: string | null): boolean {
+    if (!token) return true;
+    const payload = this.getTokenPayload(token);
+    if (!payload || !payload.exp) return true;
+    return payload.exp * 1000 < Date.now();
+  }
+
+  static getTokenExpirationTime(token: string | null): number | null {
+    if (!token) return null;
+    const payload = this.getTokenPayload(token);
+    return payload && payload.exp ? payload.exp * 1000 : null;
   }
 }

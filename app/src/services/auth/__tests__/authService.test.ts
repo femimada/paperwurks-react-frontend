@@ -2,8 +2,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthService } from '../authService';
 import { TokenService } from '../tokenService';
-import type { LoginRequest, RegisterRequest } from '@/types/auth';
-
+import { apiClient } from '@/services/api';
+import { logger } from '@/utils/logger';
+import type {
+  RegisterRequest,
+  ResetPasswordRequest,
+  ChangePasswordRequest,
+  User,
+} from '@/types/auth/auth.types';
+import type { LoginFormData as LoginRequest } from '@/hooks/auth';
 // Mock the API client
 vi.mock('@/services/api', () => ({
   apiClient: {
@@ -13,12 +20,36 @@ vi.mock('@/services/api', () => ({
   },
 }));
 
+// Mock TokenService
+vi.mock('../tokenService', () => ({
+  TokenService: {
+    setTokens: vi.fn(),
+    clearTokens: vi.fn(),
+    getTokens: vi.fn(),
+    getAccessToken: vi.fn(),
+    getRefreshToken: vi.fn(),
+    hasValidTokens: vi.fn(),
+    isTokenExpired: vi.fn(),
+  },
+}));
+
+// Mock logger
+vi.mock('@/utils/logger', () => ({
+  logger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 describe('AuthService', () => {
   let authService: AuthService;
 
   beforeEach(() => {
     authService = new AuthService();
     vi.clearAllMocks();
+    vi.mocked(TokenService.getTokens).mockClear();
   });
 
   describe('login', () => {
@@ -26,6 +57,7 @@ describe('AuthService', () => {
       const mockCredentials: LoginRequest = {
         email: 'owner@test.com',
         password: 'password123',
+        rememberMe: false,
       };
 
       const mockResponse = {
@@ -49,15 +81,22 @@ describe('AuthService', () => {
         },
       };
 
-      const { apiClient } = await import('@/services/api');
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(TokenService.setTokens).mockReturnValue(undefined);
 
       const result = await authService.login(mockCredentials);
 
       expect(apiClient.post).toHaveBeenCalledWith(
         '/auth/login',
-        mockCredentials
+        mockCredentials,
+        { withCredentials: true }
       );
+      expect(TokenService.setTokens).toHaveBeenCalledWith(
+        mockResponse.data.data.tokens
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Login successful', {
+        email: mockCredentials.email,
+      });
       expect(result).toEqual(mockResponse.data.data);
     });
 
@@ -65,20 +104,21 @@ describe('AuthService', () => {
       const mockCredentials: LoginRequest = {
         email: 'wrong@test.com',
         password: 'wrongpassword',
+        rememberMe: false,
       };
 
-      const mockResponse = {
-        data: {
-          success: false,
-          message: 'Invalid credentials',
-        },
+      const mockError = {
+        response: { data: { message: 'Invalid credentials' } },
       };
 
-      const { apiClient } = await import('@/services/api');
-      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
 
       await expect(authService.login(mockCredentials)).rejects.toThrow(
         'Invalid credentials'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Login failed',
+        expect.anything()
       );
     });
   });
@@ -116,8 +156,8 @@ describe('AuthService', () => {
         },
       };
 
-      const { apiClient } = await import('@/services/api');
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(TokenService.setTokens).mockReturnValue(undefined);
 
       const result = await authService.register(mockRegisterData);
 
@@ -125,6 +165,12 @@ describe('AuthService', () => {
         '/auth/register',
         mockRegisterData
       );
+      expect(TokenService.setTokens).toHaveBeenCalledWith(
+        mockResponse.data.data.tokens
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Registration successful', {
+        email: mockRegisterData.email,
+      });
       expect(result).toEqual(mockResponse.data.data);
     });
 
@@ -139,25 +185,32 @@ describe('AuthService', () => {
         acceptsTerms: true,
       };
 
-      const mockResponse = {
-        data: {
-          success: false,
-          message: 'An account with this email already exists',
+      const mockError = {
+        response: {
+          data: { message: 'An account with this email already exists' },
         },
       };
 
-      const { apiClient } = await import('@/services/api');
-      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
 
       await expect(authService.register(mockRegisterData)).rejects.toThrow(
         'An account with this email already exists'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Registration failed',
+        expect.anything()
       );
     });
   });
 
   describe('refreshToken', () => {
     it('should successfully refresh tokens', async () => {
-      const mockRefreshToken = 'mock-refresh-token';
+      const mockTokens = {
+        accessToken: 'old-access-token',
+        refreshToken: 'mock-refresh-token',
+        tokenType: 'Bearer',
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      };
       const mockResponse = {
         data: {
           success: true,
@@ -165,6 +218,9 @@ describe('AuthService', () => {
             user: {
               id: '1',
               email: 'owner@test.com',
+              firstName: 'John',
+              lastName: 'Owner',
+              role: 'owner',
             },
             tokens: {
               accessToken: 'new-access-token',
@@ -176,50 +232,98 @@ describe('AuthService', () => {
         },
       };
 
-      const { apiClient } = await import('@/services/api');
+      vi.mocked(TokenService.getTokens).mockReturnValue(mockTokens);
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(TokenService.setTokens).mockReturnValue(undefined);
 
-      const result = await authService.refreshToken(mockRefreshToken);
+      const result = await authService.refreshToken();
 
-      expect(apiClient.post).toHaveBeenCalledWith('/auth/refresh', {
-        refreshToken: mockRefreshToken,
-      });
+      expect(TokenService.getTokens).toHaveBeenCalled();
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/auth/refresh',
+        { refreshToken: mockTokens.refreshToken },
+        { withCredentials: true }
+      );
+      expect(TokenService.setTokens).toHaveBeenCalledWith(
+        mockResponse.data.data.tokens
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Token refresh successful');
       expect(result).toEqual(mockResponse.data.data);
     });
 
     it('should throw error for invalid refresh token', async () => {
-      const mockRefreshToken = 'invalid-token';
-      const mockResponse = {
-        data: {
-          success: false,
-          message: 'Invalid or expired refresh token',
-        },
+      const mockTokens = {
+        accessToken: 'old-access-token',
+        refreshToken: 'invalid-token',
+        tokenType: 'Bearer',
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      };
+      const mockError = {
+        response: { data: { message: 'Invalid refresh token' } },
       };
 
-      const { apiClient } = await import('@/services/api');
-      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(TokenService.getTokens).mockReturnValue(mockTokens);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+      vi.mocked(TokenService.clearTokens).mockReturnValue(undefined);
 
-      await expect(authService.refreshToken(mockRefreshToken)).rejects.toThrow(
-        'Invalid or expired refresh token'
+      await expect(authService.refreshToken()).rejects.toThrow(
+        'Invalid refresh token'
       );
+      expect(TokenService.clearTokens).toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Token refresh failed',
+        expect.anything()
+      );
+    });
+
+    it('should throw "No refresh token available" if no token is found', async () => {
+      vi.mocked(TokenService.getTokens).mockReturnValue({
+        accessToken: '',
+        refreshToken: '',
+        tokenType: 'Bearer',
+        expiresAt: '',
+      });
+
+      await expect(authService.refreshToken()).rejects.toThrow(
+        'No refresh token available'
+      );
+      expect(apiClient.post).not.toHaveBeenCalled();
+      expect(TokenService.clearTokens).not.toHaveBeenCalled();
     });
   });
 
   describe('logout', () => {
     it('should successfully logout', async () => {
       const mockResponse = {
-        data: {
-          success: true,
-          data: null,
-          message: 'Logged out successfully',
-        },
+        data: { success: true, data: null },
       };
 
-      const { apiClient } = await import('@/services/api');
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+      vi.mocked(TokenService.clearTokens).mockReturnValue(undefined);
 
-      await expect(authService.logout()).resolves.not.toThrow();
-      expect(apiClient.post).toHaveBeenCalledWith('/auth/logout');
+      await authService.logout();
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/auth/logout',
+        {},
+        { withCredentials: true }
+      );
+      expect(TokenService.clearTokens).toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalledWith('Logout successful');
+    });
+
+    it('should throw error on logout failure', async () => {
+      const mockError = {
+        response: { data: { message: 'Logout failed' } },
+      };
+
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+
+      await expect(authService.logout()).rejects.toThrow('Logout failed');
+      expect(logger.error).toHaveBeenCalledWith(
+        'Logout failed',
+        expect.anything()
+      );
     });
   });
 
@@ -227,20 +331,123 @@ describe('AuthService', () => {
     it('should successfully send password reset email', async () => {
       const email = 'owner@test.com';
       const mockResponse = {
-        data: {
-          success: true,
-          data: null,
-          message: 'Password reset link sent to your email',
-        },
+        data: { success: true, data: null },
       };
 
-      const { apiClient } = await import('@/services/api');
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
 
-      await expect(authService.forgotPassword(email)).resolves.not.toThrow();
+      await authService.forgotPassword(email);
+
       expect(apiClient.post).toHaveBeenCalledWith('/auth/forgot-password', {
         email,
       });
+      expect(logger.debug).toHaveBeenCalledWith('Password reset email sent', {
+        email,
+      });
+    });
+
+    it('should throw error on failure', async () => {
+      const email = 'owner@test.com';
+      const mockError = {
+        response: { data: { message: 'Password reset request failed' } },
+      };
+
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+
+      await expect(authService.forgotPassword(email)).rejects.toThrow(
+        'Password reset request failed'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to send password reset email',
+        expect.anything()
+      );
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should successfully reset password', async () => {
+      const resetData: ResetPasswordRequest = {
+        token: 'reset-token',
+        password: 'newpassword123',
+        confirmPassword: 'newpassword123',
+      };
+      const mockResponse = {
+        data: { success: true, data: null },
+      };
+
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+
+      await authService.resetPassword(resetData);
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/auth/reset-password',
+        resetData
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Password reset successful');
+    });
+
+    it('should throw error on failure', async () => {
+      const resetData: ResetPasswordRequest = {
+        token: 'invalid-token',
+        password: 'newpassword123',
+        confirmPassword: 'newpassword123',
+      };
+      const mockError = {
+        response: { data: { message: 'Password reset failed' } },
+      };
+
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+
+      await expect(authService.resetPassword(resetData)).rejects.toThrow(
+        'Password reset failed'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Password reset failed',
+        expect.anything()
+      );
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should successfully change password', async () => {
+      const changeData: ChangePasswordRequest = {
+        currentPassword: 'oldpassword',
+        newPassword: 'newpassword123',
+      };
+      const mockResponse = {
+        data: { success: true, data: null },
+      };
+
+      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
+
+      await authService.changePassword(changeData);
+
+      expect(apiClient.put).toHaveBeenCalledWith(
+        '/users/change-password',
+        changeData
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Password change successful');
+    });
+
+    it('should throw error on failure', async () => {
+      const changeData: ChangePasswordRequest = {
+        currentPassword: 'wrongpassword',
+        newPassword: 'newpassword123',
+        confirmPassword: 'newpassword123',
+      };
+      const mockError = {
+        response: { data: { message: 'Password change failed' } },
+      };
+
+      vi.mocked(apiClient.put).mockRejectedValue(mockError);
+
+      await expect(authService.changePassword(changeData)).rejects.toThrow(
+        'Password change failed'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Password change failed',
+        expect.anything()
+      );
     });
   });
 
@@ -253,101 +460,152 @@ describe('AuthService', () => {
         lastName: 'Owner',
         role: 'owner',
       };
-
       const mockResponse = {
-        data: {
-          success: true,
-          data: mockUser,
-        },
+        data: { success: true, data: mockUser },
       };
 
-      const { apiClient } = await import('@/services/api');
       vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
 
       const result = await authService.getCurrentUser();
 
       expect(apiClient.get).toHaveBeenCalledWith('/users/profile');
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Fetched current user successfully'
+      );
       expect(result).toEqual(mockUser);
     });
-  });
-});
 
-// src/services/auth/__tests__/tokenService.test.ts
-describe('TokenService', () => {
-  beforeEach(() => {
-    // Clear localStorage before each test
-    localStorage.clear();
-  });
-
-  describe('setTokens and getTokens', () => {
-    it('should store and retrieve tokens correctly', () => {
-      const mockTokens = {
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        expiresAt: new Date(Date.now() + 3600000).toISOString(),
-        tokenType: 'Bearer' as const,
+    it('should throw error on failure', async () => {
+      const mockError = {
+        response: { data: { message: 'Failed to fetch user profile' } },
       };
 
-      TokenService.setTokens(mockTokens);
+      vi.mocked(apiClient.get).mockRejectedValue(mockError);
 
-      expect(TokenService.getAccessToken()).toBe(mockTokens.accessToken);
-      expect(TokenService.getRefreshToken()).toBe(mockTokens.refreshToken);
+      await expect(authService.getCurrentUser()).rejects.toThrow(
+        'Failed to fetch user profile'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to fetch current user',
+        expect.anything()
+      );
     });
   });
 
-  describe('clearTokens', () => {
-    it('should remove all stored tokens', () => {
-      const mockTokens = {
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        expiresAt: new Date(Date.now() + 3600000).toISOString(),
-        tokenType: 'Bearer' as const,
+  describe('updateProfile', () => {
+    it('should successfully update user profile', async () => {
+      const profileData: Partial<User> = {
+        firstName: 'John',
+        lastName: 'Doe Updated',
+      };
+      const mockUser = {
+        id: '1',
+        email: 'owner@test.com',
+        firstName: 'John',
+        lastName: 'Doe Updated',
+        role: 'owner',
+      };
+      const mockResponse = {
+        data: { success: true, data: mockUser },
       };
 
-      TokenService.setTokens(mockTokens);
-      TokenService.clearTokens();
+      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
 
-      expect(TokenService.getAccessToken()).toBeNull();
-      expect(TokenService.getRefreshToken()).toBeNull();
+      const result = await authService.updateProfile(profileData);
+
+      expect(apiClient.put).toHaveBeenCalledWith('/users/profile', profileData);
+      expect(logger.debug).toHaveBeenCalledWith('Profile update successful');
+      expect(result).toEqual(mockUser);
     });
-  });
 
-  describe('hasValidTokens', () => {
-    it('should return true when both tokens exist', () => {
-      const mockTokens = {
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        expiresAt: new Date(Date.now() + 3600000).toISOString(),
-        tokenType: 'Bearer' as const,
+    it('should throw error on failure', async () => {
+      const profileData: Partial<User> = {
+        firstName: 'John',
+        lastName: 'Doe Updated',
+      };
+      const mockError = {
+        response: { data: { message: 'Profile update failed' } },
       };
 
-      TokenService.setTokens(mockTokens);
+      vi.mocked(apiClient.put).mockRejectedValue(mockError);
 
-      expect(TokenService.hasValidTokens()).toBe(true);
-    });
-
-    it('should return false when tokens are missing', () => {
-      expect(TokenService.hasValidTokens()).toBe(false);
+      await expect(authService.updateProfile(profileData)).rejects.toThrow(
+        'Profile update failed'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Profile update failed',
+        expect.anything()
+      );
     });
   });
 
-  describe('isTokenExpired', () => {
-    it('should return false for future expiration date', () => {
-      const futureDate = new Date(Date.now() + 3600000).toISOString();
-      expect(TokenService.isTokenExpired(futureDate)).toBe(false);
+  describe('verifyEmail', () => {
+    it('should successfully verify email', async () => {
+      const token = 'verification-token';
+      const mockResponse = {
+        data: { success: true, data: null },
+      };
+
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+
+      await authService.verifyEmail(token);
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        `/auth/verify-email/${token}`
+      );
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Email verification successful'
+      );
     });
 
-    it('should return true for past expiration date', () => {
-      const pastDate = new Date(Date.now() - 3600000).toISOString();
-      expect(TokenService.isTokenExpired(pastDate)).toBe(true);
+    it('should throw error on failure', async () => {
+      const token = 'invalid-token';
+      const mockError = {
+        response: { data: { message: 'Email verification failed' } },
+      };
+
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+
+      await expect(authService.verifyEmail(token)).rejects.toThrow(
+        'Email verification failed'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Email verification failed',
+        expect.anything()
+      );
+    });
+  });
+
+  describe('resendVerification', () => {
+    it('should successfully resend verification email', async () => {
+      const mockResponse = {
+        data: { success: true, data: null },
+      };
+
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
+
+      await authService.resendVerification();
+
+      expect(apiClient.post).toHaveBeenCalledWith('/auth/resend-verification');
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Verification email resent successfully'
+      );
     });
 
-    it('should return true for invalid date', () => {
-      expect(TokenService.isTokenExpired('invalid-date')).toBe(true);
-    });
+    it('should throw error on failure', async () => {
+      const mockError = {
+        response: { data: { message: 'Failed to resend verification email' } },
+      };
 
-    it('should return true for undefined date', () => {
-      expect(TokenService.isTokenExpired(undefined)).toBe(true);
+      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+
+      await expect(authService.resendVerification()).rejects.toThrow(
+        'Failed to resend verification email'
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to resend verification email',
+        expect.anything()
+      );
     });
   });
 });

@@ -1,346 +1,347 @@
 // src/context/AuthContext.tsx
-import React, {
+import {
   createContext,
   useContext,
   useReducer,
-  useEffect,
   useCallback,
-  useMemo,
+  useEffect,
+  type ReactNode,
 } from 'react';
-import { authService, TokenService } from '@/services/auth';
+import { authService } from '@/services/auth';
+import { TokenService } from '@/services/auth/tokenService';
 import { logger } from '@/utils/logger';
-import type {
-  AuthState,
-  AuthActions,
-  UseAuthReturn,
-  LoginRequest,
-  RegisterRequest,
-  ResetPasswordRequest,
-  ChangePasswordRequest,
-  ProfileUpdateFormData,
-  User,
-  AuthTokens,
-} from '@/types/auth';
-import type { UserRole, Permission } from '@/types/global.types';
+import type { User, AuthResponse, RegisterRequest } from '@/types/auth';
+import type { LoginFormData as LoginRequest } from '@/hooks/auth';
+import type { Permission } from '@/types/global.types';
 
-// Auth Context
-interface AuthContextValue extends AuthState, AuthActions {
-  hasPermission: (permission: Permission) => boolean;
-  hasRole: (role: UserRole) => boolean;
-  hasAnyPermission: (permissions: Permission[]) => boolean;
-  isRole: (roles: UserRole[]) => boolean;
+// Enhanced types for better safety
+type AuthErrorPayload = { message: string; code?: string };
+type AuthSuccessPayload = AuthResponse;
+type UpdateUserPayload = User;
+
+interface AuthState {
+  permissions: Permission[];
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-// Auth Actions
 type AuthAction =
   | { type: 'AUTH_LOADING' }
-  | { type: 'AUTH_SUCCESS'; payload: { user: User; tokens: AuthTokens } }
-  | { type: 'AUTH_ERROR'; payload: string }
+  | { type: 'AUTH_SUCCESS'; payload: AuthSuccessPayload }
+  | { type: 'AUTH_ERROR'; payload: AuthErrorPayload }
   | { type: 'AUTH_LOGOUT' }
   | { type: 'CLEAR_ERROR' }
-  | { type: 'UPDATE_USER'; payload: User };
+  | { type: 'UPDATE_USER'; payload: UpdateUserPayload };
 
-// Auth Reducer
+export interface AuthContextType {
+  permissions: Permission[];
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  register: (data: RegisterRequest) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (data: {
+    token: string;
+    password: string;
+    confirmPassword: string;
+  }) => Promise<void>;
+  changePassword: (data: {
+    currentPassword: string;
+    newPassword: string;
+  }) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<User>;
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerification: () => Promise<void>;
+  clearError: () => void;
+  hasPermission: (permission: Permission) => boolean;
+  hasRole: (role: string) => boolean;
+  hasAnyPermission: (permissions: Permission[]) => boolean;
+}
+
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
+
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'AUTH_LOADING':
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-      };
-
+      return { ...state, isLoading: true, error: null };
     case 'AUTH_SUCCESS':
       return {
+        ...state,
         user: action.payload.user,
-        tokens: action.payload.tokens,
+        permissions: action.payload.user?.permissions ?? [],
         isAuthenticated: true,
         isLoading: false,
         error: null,
-        permissions: action.payload.user.permissions,
       };
-
     case 'AUTH_ERROR':
       return {
-        user: null,
-        tokens: null,
-        isAuthenticated: false,
+        ...state,
         isLoading: false,
-        error: action.payload,
-        permissions: [],
+        error: action.payload.message,
       };
-
     case 'AUTH_LOGOUT':
       return {
+        ...state,
         user: null,
-        tokens: null,
+        permissions: [],
         isAuthenticated: false,
         isLoading: false,
         error: null,
-        permissions: [],
       };
-
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
     case 'UPDATE_USER':
       return {
         ...state,
         user: action.payload,
-        permissions: action.payload.permissions,
-      };
-
-    case 'CLEAR_ERROR':
-      return {
-        ...state,
+        permissions: action.payload.permissions ?? [],
+        isLoading: false,
         error: null,
       };
-
     default:
       return state;
   }
 };
 
-// Initial state
-const initialState: AuthState = {
-  user: null,
-  tokens: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
-  permissions: [],
-};
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [state, dispatch] = useReducer(authReducer, {
+    user: null,
+    permissions: [],
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+  });
 
-// Auth Provider Props
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
-
-// Auth Provider Component
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-
-  // Check for existing tokens on mount
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const { accessToken, refreshToken } = TokenService.getTokens();
-
-      if (accessToken && refreshToken) {
-        dispatch({ type: 'AUTH_LOADING' });
-
-        try {
-          // Try to get current user with existing token
-          const user = await authService.getCurrentUser();
-
-          const tokens: AuthTokens = {
-            accessToken,
-            refreshToken,
-            expiresAt: '', // We don't store expiry locally, server handles it
-            tokenType: 'Bearer',
-          };
-
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user, tokens },
-          });
-
-          logger.info('Authentication restored from stored tokens');
-        } catch (error) {
-          // Token might be expired, try to refresh
-          try {
-            const refreshResponse =
-              await authService.refreshToken(refreshToken);
-            TokenService.setTokens(refreshResponse.tokens);
-
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: refreshResponse,
-            });
-
-            logger.info('Authentication refreshed successfully');
-          } catch (refreshError) {
-            // Refresh failed, clear tokens and show login
-            TokenService.clearTokens();
-            dispatch({ type: 'AUTH_LOGOUT' });
-            logger.warn('Token refresh failed, user needs to login again');
-          }
-        }
-      }
-    };
-
-    initializeAuth();
-  }, []);
-
-  // Login function
-  const login = useCallback(
-    async (credentials: LoginRequest): Promise<void> => {
-      dispatch({ type: 'AUTH_LOADING' });
-
-      try {
-        const authResponse = await authService.login(credentials);
-
-        // Store tokens
-        TokenService.setTokens(authResponse.tokens);
-
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: authResponse,
-        });
-
-        logger.info('User logged in successfully', {
-          userId: authResponse.user.id,
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Login failed';
-        dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
-        logger.error('Login failed', error);
-        throw error;
-      }
-    },
-    []
-  );
-
-  // Register function
-  const register = useCallback(
-    async (userData: RegisterRequest): Promise<void> => {
-      dispatch({ type: 'AUTH_LOADING' });
-
-      try {
-        const authResponse = await authService.register(userData);
-
-        // Store tokens
-        TokenService.setTokens(authResponse.tokens);
-
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: authResponse,
-        });
-
-        logger.info('User registered successfully', {
-          userId: authResponse.user.id,
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Registration failed';
-        dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
-        logger.error('Registration failed', error);
-        throw error;
-      }
-    },
-    []
-  );
-
-  // Logout function
-  const logout = useCallback(async (): Promise<void> => {
+  const login = useCallback(async (credentials: LoginRequest) => {
+    dispatch({ type: 'AUTH_LOADING' });
     try {
-      await authService.logout();
-    } catch (error) {
-      logger.warn('Logout API call failed, clearing local state anyway', error);
-    }
-
-    // Always clear local state regardless of API call success
-    TokenService.clearTokens();
-    dispatch({ type: 'AUTH_LOGOUT' });
-
-    logger.info('User logged out');
-  }, []);
-
-  // Refresh token function
-  const refreshToken = useCallback(async (): Promise<void> => {
-    const { refreshToken: currentRefreshToken } = TokenService.getTokens();
-
-    if (!currentRefreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    try {
-      const authResponse = await authService.refreshToken(currentRefreshToken);
-
-      TokenService.setTokens(authResponse.tokens);
-
+      const authResponse = await authService.login(credentials);
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: authResponse,
       });
-
-      logger.debug('Token refreshed successfully');
-    } catch (error) {
-      TokenService.clearTokens();
-      dispatch({ type: 'AUTH_LOGOUT' });
-      logger.error('Token refresh failed', error);
+      logger.debug('Login successful');
+    } catch (error: any) {
+      const errorPayload: AuthErrorPayload = {
+        message: error.message || 'Login failed',
+      };
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: errorPayload,
+      });
       throw error;
     }
   }, []);
 
-  // Forgot password function
-  const forgotPassword = useCallback(async (email: string): Promise<void> => {
+  const register = useCallback(async (data: RegisterRequest) => {
+    dispatch({ type: 'AUTH_LOADING' });
+    try {
+      const authResponse = await authService.register(data);
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: authResponse,
+      });
+      logger.debug('Registration successful');
+    } catch (error: any) {
+      const errorPayload: AuthErrorPayload = {
+        message: error.message || 'Registration failed',
+      };
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: errorPayload,
+      });
+      throw error;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    dispatch({ type: 'AUTH_LOADING' });
+    try {
+      await authService.logout();
+      dispatch({ type: 'AUTH_LOGOUT' });
+      logger.debug('Logout successful');
+    } catch (error: any) {
+      dispatch({ type: 'AUTH_LOGOUT' });
+      logger.error('Server logout failed, logging out client-side', error);
+    }
+  }, []);
+
+  const refreshToken = useCallback(async () => {
+    try {
+      const authResponse = await authService.refreshToken(); // Now standardized to return AuthResponse
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: authResponse,
+      });
+      logger.debug('Token refresh successful');
+    } catch (error: any) {
+      dispatch({ type: 'AUTH_LOGOUT' });
+      throw error;
+    }
+  }, []);
+
+  const forgotPassword = useCallback(async (email: string) => {
+    dispatch({ type: 'AUTH_LOADING' });
     try {
       await authService.forgotPassword(email);
-      logger.info('Password reset email sent', { email });
-    } catch (error) {
-      logger.error('Forgot password failed', error);
+      logger.debug('Password reset email sent');
+    } catch (error: any) {
+      const errorPayload: AuthErrorPayload = {
+        message: error.message || 'Failed to send password reset email',
+      };
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: errorPayload,
+      });
       throw error;
     }
   }, []);
 
-  // Reset password function
   const resetPassword = useCallback(
-    async (data: ResetPasswordRequest): Promise<void> => {
+    async (data: {
+      token: string;
+      password: string;
+      confirmPassword: string;
+    }) => {
+      dispatch({ type: 'AUTH_LOADING' });
       try {
         await authService.resetPassword(data);
-        logger.info('Password reset successful');
-      } catch (error) {
-        logger.error('Password reset failed', error);
+        dispatch({ type: 'AUTH_LOGOUT' });
+        logger.debug('Password reset successful');
+      } catch (error: any) {
+        const errorPayload: AuthErrorPayload = {
+          message: error.message || 'Password reset failed',
+        };
+        dispatch({
+          type: 'AUTH_ERROR',
+          payload: errorPayload,
+        });
         throw error;
       }
     },
     []
   );
 
-  // Change password function
   const changePassword = useCallback(
-    async (data: ChangePasswordRequest): Promise<void> => {
+    async (data: { currentPassword: string; newPassword: string }) => {
+      dispatch({ type: 'AUTH_LOADING' });
       try {
         await authService.changePassword(data);
-        logger.info('Password changed successfully');
-      } catch (error) {
-        logger.error('Password change failed', error);
+        dispatch({ type: 'AUTH_LOGOUT' });
+        logger.debug('Password change successful, user logged out.');
+      } catch (error: any) {
+        const errorPayload: AuthErrorPayload = {
+          message: error.message || 'Password change failed',
+        };
+        dispatch({
+          type: 'AUTH_ERROR',
+          payload: errorPayload,
+        });
         throw error;
       }
     },
     []
   );
 
-  // Update profile function
-  const updateProfile = useCallback(
-    async (profileData: Partial<ProfileUpdateFormData>): Promise<void> => {
-      if (!state.user) {
-        throw new Error('No authenticated user');
-      }
-
-      try {
-        const updatedUser = await authService.updateProfile(profileData);
-
-        dispatch({
-          type: 'UPDATE_USER',
-          payload: updatedUser,
-        });
-
-        logger.info('Profile updated successfully');
-      } catch (error) {
-        logger.error('Profile update failed', error);
-        throw error;
-      }
-    },
-    [state.user]
-  );
-
-  // Clear error function
-  const clearError = useCallback(() => {
-    dispatch({ type: 'CLEAR_ERROR' });
+  const updateProfile = useCallback(async (data: Partial<User>) => {
+    dispatch({ type: 'AUTH_LOADING' });
+    try {
+      const updatedUser = await authService.updateProfile(data);
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: updatedUser,
+      });
+      logger.debug('Profile update successful');
+      return updatedUser;
+    } catch (error: any) {
+      const errorPayload: AuthErrorPayload = {
+        message: error.message || 'Profile update failed',
+      };
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: errorPayload,
+      });
+      throw error;
+    }
   }, []);
 
-  // Permission checking functions
+  const verifyEmail = useCallback(async (token: string) => {
+    dispatch({ type: 'AUTH_LOADING' });
+    try {
+      const updatedUser = await authService.verifyEmail(token);
+      dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+      logger.debug('Email verification successful');
+    } catch (error: any) {
+      const errorPayload: AuthErrorPayload = {
+        message: error.message || 'Email verification failed',
+      };
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: errorPayload,
+      });
+      throw error;
+    }
+  }, []);
+
+  const resendVerification = useCallback(async () => {
+    dispatch({ type: 'AUTH_LOADING' });
+    try {
+      await authService.resendVerification();
+      logger.debug('Verification email resent successfully');
+    } catch (error: any) {
+      const errorPayload: AuthErrorPayload = {
+        message: error.message || 'Failed to resend verification email',
+      };
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: errorPayload,
+      });
+      throw error;
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    dispatch({ type: 'CLEAR_ERROR' });
+    logger.debug('Error cleared');
+  }, []);
+
+  // Listen for logout event from interceptors
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      dispatch({ type: 'AUTH_LOGOUT' });
+    };
+    window.addEventListener('auth:logout', handleAuthLogout);
+    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+  }, []);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      if (
+        TokenService.hasValidTokens() &&
+        !TokenService.isTokenExpired(TokenService.getAccessToken())
+      ) {
+        try {
+          const user = await authService.getCurrentUser();
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: { user, tokens: TokenService.getTokens()! },
+          });
+        } catch (error) {
+          dispatch({ type: 'AUTH_LOGOUT' });
+        }
+      }
+    };
+    initializeAuth();
+  }, []);
+
   const hasPermission = useCallback(
     (permission: Permission): boolean => {
       return state.permissions.includes(permission);
@@ -348,83 +349,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [state.permissions]
   );
 
-  const hasRole = useCallback(
-    (role: UserRole): boolean => {
-      return state.user?.role === role;
-    },
-    [state.user?.role]
-  );
-
   const hasAnyPermission = useCallback(
     (permissions: Permission[]): boolean => {
-      return permissions.some((permission) =>
-        state.permissions.includes(permission)
-      );
+      return permissions.some((p) => state.permissions.includes(p));
     },
     [state.permissions]
   );
 
-  const isRole = useCallback(
-    (roles: UserRole[]): boolean => {
-      return state.user ? roles.includes(state.user.role) : false;
+  const hasRole = useCallback(
+    (role: string): boolean => {
+      return state.user?.role === role;
     },
-    [state.user?.role]
-  );
-
-  // Context value
-  const contextValue = useMemo(
-    () => ({
-      // State
-      ...state,
-
-      // Actions
-      login,
-      register,
-      logout,
-      refreshToken,
-      forgotPassword,
-      resetPassword,
-      changePassword,
-      updateProfile,
-      clearError,
-
-      // Permission helpers
-      hasPermission,
-      hasRole,
-      hasAnyPermission,
-      isRole,
-    }),
-
-    [
-      state,
-      login,
-      register,
-      logout,
-      refreshToken,
-      forgotPassword,
-      resetPassword,
-      changePassword,
-      updateProfile,
-      clearError,
-      hasPermission,
-      hasRole,
-      hasAnyPermission,
-      isRole,
-    ]
+    [state.user]
   );
 
   return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider
+      value={{
+        user: state.user,
+        permissions: state.permissions,
+        isAuthenticated: state.isAuthenticated,
+        isLoading: state.isLoading,
+        error: state.error,
+        login,
+        register,
+        logout,
+        refreshToken,
+        forgotPassword,
+        resetPassword,
+        changePassword,
+        updateProfile,
+        verifyEmail,
+        resendVerification,
+        clearError,
+        hasPermission,
+        hasAnyPermission,
+        hasRole,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 };
 
-// Custom hook to use auth context
-export const useAuth = (): UseAuthReturn => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-
   return context;
 };

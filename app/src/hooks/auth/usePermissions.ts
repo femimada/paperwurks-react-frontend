@@ -1,5 +1,5 @@
 // src/hooks/auth/usePermissions.ts
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react'; // REFACTOR: useCallback is better for functions
 import { useAuth } from './useAuth';
 import { ROLE_PERMISSIONS } from '@/constants/roles';
 import type { Permission, UserRole } from '@/types/global.types';
@@ -7,48 +7,37 @@ import type { PermissionCheckResult } from '@/types/auth';
 
 /**
  * Hook for advanced permission management and checking
- *
- * Provides utilities for:
- * - Permission validation
- * - Role-based access control
- * - Permission inheritance
- * - Bulk permission checks
  */
 export const usePermissions = () => {
-  const {
-    user,
-    permissions,
-    hasPermission,
-    hasRole,
-    hasAnyPermission,
-    isRole,
-  } = useAuth();
+  const { user, permissions, hasPermission, hasRole, hasAnyPermission } =
+    useAuth();
 
   /**
    * Get all permissions for a specific role
    */
-  const getRolePermissions = useMemo(() => {
-    return (role: UserRole): Permission[] => {
-      return ROLE_PERMISSIONS[role] || [];
-    };
+  const getRolePermissions = useCallback((role: UserRole): Permission[] => {
+    return ROLE_PERMISSIONS[role] || [];
   }, []);
 
   /**
    * Check if current user has all required permissions
    */
-  const hasAllPermissions = useMemo(() => {
-    return (requiredPermissions: Permission[]): boolean => {
+  const hasAllPermissions = useCallback(
+    (requiredPermissions: Permission[]): boolean => {
+      // FIX: Use the 'permissions' array from state for efficiency
+      const userPermissions = new Set(permissions);
       return requiredPermissions.every((permission) =>
-        hasPermission(permission)
+        userPermissions.has(permission)
       );
-    };
-  }, [hasPermission]);
+    },
+    [permissions]
+  );
 
   /**
    * Detailed permission check with reasoning
    */
-  const checkPermission = useMemo(() => {
-    return (requiredPermissions: Permission[]): PermissionCheckResult => {
+  const checkPermission = useCallback(
+    (requiredPermissions: Permission[]): PermissionCheckResult => {
       const userPermissions = permissions;
       const missingPermissions = requiredPermissions.filter(
         (perm) => !userPermissions.includes(perm)
@@ -64,20 +53,20 @@ export const usePermissions = () => {
         requiredPermissions,
         missingPermissions,
       };
-    };
-  }, [permissions]);
+    },
+    [permissions]
+  );
 
   /**
    * Check if user can access a resource based on role hierarchy
    */
-  const canAccessResource = useMemo(() => {
-    return (
+  const canAccessResource = useCallback(
+    (
       resourceRole: UserRole,
       requiredPermissions: Permission[] = []
     ): boolean => {
       if (!user) return false;
 
-      // Check role match or hierarchy
       const roleHierarchy: Record<UserRole, number> = {
         buyer: 1,
         owner: 2,
@@ -88,29 +77,25 @@ export const usePermissions = () => {
       const userRoleLevel = roleHierarchy[user.role];
       const resourceRoleLevel = roleHierarchy[resourceRole];
 
-      // Higher level roles can access lower level resources
       const hasRoleAccess = userRoleLevel >= resourceRoleLevel;
 
-      // Check specific permissions if provided
       const hasRequiredPermissions =
         requiredPermissions.length === 0 ||
         hasAllPermissions(requiredPermissions);
 
       return hasRoleAccess && hasRequiredPermissions;
-    };
-  }, [user, hasAllPermissions]);
+    },
+    [user, hasAllPermissions]
+  );
 
   /**
    * Get user's effective permissions (role + assigned permissions)
    */
   const effectivePermissions = useMemo((): Permission[] => {
     if (!user) return [];
-
     const rolePermissions = getRolePermissions(user.role);
-    const assignedPermissions = permissions;
-
     // Combine and deduplicate
-    return Array.from(new Set([...rolePermissions, ...assignedPermissions]));
+    return Array.from(new Set([...rolePermissions, ...permissions]));
   }, [user, permissions, getRolePermissions]);
 
   /**
@@ -118,33 +103,28 @@ export const usePermissions = () => {
    */
   const hasElevatedPermissions = useMemo((): boolean => {
     if (!user) return false;
-
-    const rolePermissions = getRolePermissions(user.role);
-    const userPermissions = permissions;
-
-    return userPermissions.some((perm) => !rolePermissions.includes(perm));
+    const rolePermissions = new Set(getRolePermissions(user.role));
+    return permissions.some((perm) => !rolePermissions.has(perm));
   }, [user, permissions, getRolePermissions]);
 
   /**
    * Get permissions that the user is missing for a specific role
    */
-  const getMissingPermissionsForRole = useMemo(() => {
-    return (targetRole: UserRole): Permission[] => {
+  const getMissingPermissionsForRole = useCallback(
+    (targetRole: UserRole): Permission[] => {
       const targetPermissions = getRolePermissions(targetRole);
-      const userPermissions = permissions;
-
-      return targetPermissions.filter(
-        (perm) => !userPermissions.includes(perm)
-      );
-    };
-  }, [permissions, getRolePermissions]);
+      const userPermissions = new Set(permissions);
+      return targetPermissions.filter((perm) => !userPermissions.has(perm));
+    },
+    [permissions, getRolePermissions]
+  );
 
   return {
     // Basic permission checks (from useAuth)
     hasPermission,
     hasRole,
     hasAnyPermission,
-    isRole,
+    isRole: hasRole,
 
     // Advanced permission utilities
     hasAllPermissions,

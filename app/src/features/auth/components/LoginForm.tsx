@@ -1,7 +1,9 @@
+// src/features/auth/components/LoginForm/LoginForm.tsx
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth';
-import { useLogin } from '../../../hooks/auth/useLogin';
+import { useLogin } from '@/hooks/auth/useLogin';
 import { Input, Button, Card } from '@/components/ui';
 import { logger } from '@/utils/logger';
 
@@ -66,35 +68,46 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   showLinks = true,
 }) => {
   const { error, clearError } = useAuth();
+  const { onSubmit, isSubmitting, form } = useLogin();
+  const [showPassword, setShowPassword] = React.useState(false);
+  const emailInputRef = React.useRef<HTMLInputElement>(null);
+  const hasFocusedRef = React.useRef<boolean>(false);
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { errors, isValid },
-    onSubmit,
-    isSubmitting,
-  } = useLogin();
-  const [showPassword, setShowPassword] = React.useState(false);
-  const emailInputWrapperRef = React.useRef<HTMLDivElement>(null);
+  } = form;
 
-  // Change: Add debug log to verify focus logic
-  // Reason: Focus test is failing, so log when useEffect runs
   React.useEffect(() => {
-    if (errors.email && emailInputWrapperRef.current) {
-      const input = emailInputWrapperRef.current.querySelector(
-        'input[data-testid="email-input"]'
-      );
-      if (input instanceof HTMLInputElement) {
-        logger.debug('Focusing email input due to validation error', {
-          error: errors.email.message,
-        });
-        input.focus();
-      }
+    setFocus('email');
+    hasFocusedRef.current = true;
+  }, [setFocus]);
+
+  React.useEffect(() => {
+    if (errors.email) {
+      hasFocusedRef.current = false;
     }
+  }, [errors.email]);
+
+  React.useEffect(() => {
+    if (errors.email && emailInputRef.current && !hasFocusedRef.current) {
+      logger.debug('Focusing email input due to validation error', {
+        error: errors.email.message,
+      });
+      emailInputRef.current.focus();
+      hasFocusedRef.current = true;
+    }
+  }, [errors.email]);
+
+  React.useEffect(() => {
     return () => {
-      logger.debug('Clearing error on unmount');
-      clearError();
+      if (!error) {
+        logger.debug('Clearing error on unmount');
+        clearError();
+      }
     };
-  }, [clearError, errors.email]);
+  }, [clearError, error]);
 
   const formContent = (
     <form
@@ -138,7 +151,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
       )}
 
-      <div ref={emailInputWrapperRef}>
+      <div>
         <Input
           {...register('email')}
           type="email"
@@ -149,6 +162,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           iconPosition="left"
           autoComplete="email"
           testId="email-input"
+          ref={emailInputRef}
         />
       </div>
 
@@ -231,8 +245,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
       )}
 
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-md">
+      {(import.meta.env.VITE_NODE_ENV === 'development' ||
+        process.env.NODE_ENV === 'test') && (
+        <div
+          className="mt-6 p-4 bg-gray-50 rounded-md"
+          data-testid="demo-credentials"
+        >
           <h4 className="text-sm font-medium text-gray-900 mb-2">
             Demo Credentials
           </h4>

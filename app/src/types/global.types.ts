@@ -12,79 +12,80 @@ export interface BaseEntity {
 /**
  * User roles in the system
  */
-export type UserRole = "owner" | "agent" | "solicitor" | "buyer";
+export type UserRole = 'owner' | 'agent' | 'solicitor' | 'buyer';
 
 /**
  * User permissions
  */
+
 export type Permission =
-  | "property:create"
-  | "property:read"
-  | "property:update"
-  | "property:delete"
-  | "document:upload"
-  | "document:read"
-  | "document:annotate"
-  | "pack:share"
-  | "pack:review"
-  | "user:manage";
+  | 'property:create'
+  | 'property:read'
+  | 'property:update'
+  | 'property:delete'
+  | 'document:upload'
+  | 'document:read'
+  | 'document:annotate'
+  | 'pack:share'
+  | 'pack:review'
+  | 'user:manage';
 
 /**
  * Generic status types used across the application
  */
-export type Status = "active" | "inactive" | "pending" | "archived";
+export type Status = 'active' | 'inactive' | 'pending' | 'archived';
 
 /**
  * Property-specific status types
  */
 export type PropertyStatus =
-  | "draft"
-  | "in_progress"
-  | "ready"
-  | "shared"
-  | "completed";
+  | 'draft'
+  | 'in_progress'
+  | 'ready'
+  | 'shared'
+  | 'completed';
 
 /**
  * Document status types
  */
-export type DocumentStatus = "uploading" | "processing" | "ready" | "error";
+export type DocumentStatus = 'uploading' | 'processing' | 'ready' | 'error';
 
 /**
  * Property pack status
  */
 export type PackStatus =
-  | "draft"
-  | "in_progress"
-  | "ready"
-  | "shared"
-  | "completed";
+  | 'draft'
+  | 'in_progress'
+  | 'ready'
+  | 'shared'
+  | 'completed';
 
 /**
  * Property types
  */
 export type PropertyType =
-  | "detached"
-  | "semi_detached"
-  | "terraced"
-  | "flat"
-  | "bungalow";
+  | 'detached'
+  | 'semi_detached'
+  | 'terraced'
+  | 'flat'
+  | 'bungalow';
 
 /**
  * Property tenure types
  */
-export type PropertyTenure = "freehold" | "leasehold" | "commonhold";
+export type PropertyTenure = 'freehold' | 'leasehold' | 'commonhold';
 
 /**
  * Document categories
  */
 export type DocumentCategory =
-  | "title_deeds"
-  | "epc"
-  | "property_information_form"
-  | "searches"
-  | "leasehold_info"
-  | "mortgage_info"
-  | "other";
+  | 'title_deeds'
+  | 'epc'
+  | 'property_information_form'
+  | 'searches'
+  | 'leasehold_info'
+  | 'mortgage_info'
+  | 'other';
 
 /**
  * Address interface
@@ -123,7 +124,7 @@ export interface PaginationMeta {
  */
 export interface SortParams {
   field: string;
-  direction: "asc" | "desc";
+  direction: 'asc' | 'desc';
 }
 
 /**
@@ -158,7 +159,7 @@ export interface UploadProgress {
   loaded: number;
   total: number;
   percentage: number;
-  status: "pending" | "uploading" | "completed" | "error";
+  status: 'pending' | 'uploading' | 'completed' | 'error';
 }
 
 /**
@@ -175,5 +176,5 @@ export interface KeyValuePair {
 export interface Environment {
   API_BASE_URL: string;
   WS_BASE_URL: string;
-  NODE_ENV: "development" | "production" | "test";
+  NODE_ENV: 'development' | 'production' | 'test';
 }

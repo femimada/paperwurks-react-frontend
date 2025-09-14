@@ -1,3 +1,5 @@
+//src/services/api/interceptors.ts
+
 import type {
   AxiosInstance,
   AxiosError,
@@ -6,31 +8,65 @@ import type {
 } from 'axios';
 import type { ApiError, NetworkError } from '@/types/api/error.types';
 import { HTTP_STATUS } from '@/constants/api';
-import {
-  getStorageItem,
-  removeStorageItem,
-} from '@/utils/storage/localStorage';
-import { LOCAL_STORAGE_KEYS } from '@/constants/storage';
 import { logger } from '@/utils/logger';
 import { TokenService } from '../auth/tokenService';
+import { authService } from '../auth';
+import { apiClient } from './client';
+
+let isRefreshing = false;
+
+let failedQueue: Array<{
+  resolve: (value: { token: string }) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+// Sanitize sensitive data for logging
+const sanitizeData = (data: any, url?: string): any => {
+  if (!data || typeof data !== 'object') return data;
+  if (url?.includes('/auth')) {
+    return '[REDACTED]';
+  }
+  const sanitized = { ...data };
+  if (sanitized.email)
+    sanitized.email = sanitized.email.replace(/@.*/, '@[redacted]');
+  if (sanitized.password) sanitized.password = '[REDACTED]';
+  return sanitized;
+};
+
+const processQueue = (
+  error: Error | null,
+  tokenObj: { token: string } | null = null
+) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(tokenObj!);
+    }
+  });
+  failedQueue = [];
+};
 
 /**
- * Request interceptor to add auth token
+ * Request interceptor to add auth token and CSRF (placeholder - implement fetch if needed)
  */
 const requestInterceptor = (config: InternalAxiosRequestConfig) => {
-  // Add auth token if available
-  const token = getStorageItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+  const token = TokenService.getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // Add request ID for tracking
+  // CSRF placeholder - fetch from /csrf on app init if required
+  // if (config.headers && !config.url?.includes('/login')) {
+  //   config.headers['X-CSRF-Token'] = getCsrfToken();
+  // }
   config.headers.set('X-Request-ID', crypto.randomUUID());
+
+  // Sanitized logging
   logger.debug('API Request', {
     method: config.method?.toUpperCase(),
     url: config.url,
-    data: config.data,
+    data: sanitizeData(config.data, config.url),
   });
-
   return config;
 };
 
@@ -38,7 +74,7 @@ const requestInterceptor = (config: InternalAxiosRequestConfig) => {
  * Request error interceptor
  */
 const requestErrorInterceptor = (error: AxiosError) => {
-  logger.error('API Request Error', error);
+  logger.error('API Request Error', error.message);
   return Promise.reject(error);
 };
 
@@ -46,12 +82,12 @@ const requestErrorInterceptor = (error: AxiosError) => {
  * Response interceptor for successful responses
  */
 const responseInterceptor = (response: AxiosResponse) => {
+  const { headers, ...logData } = response;
   logger.debug('API Response', {
-    status: response.status,
-    url: response.config.url,
-    data: response.data,
+    status: logData.status,
+    url: logData.config.url,
+    data: logData.data,
   });
-
   return response;
 };
 
@@ -59,14 +95,55 @@ const responseInterceptor = (response: AxiosResponse) => {
  * Response error interceptor
  */
 const responseErrorInterceptor = async (error: AxiosError) => {
-  const originalRequest = error.config;
+  const originalRequest = error.config as InternalAxiosRequestConfig & {
+    _retry?: boolean;
+  };
 
   // Handle different error types
   if (error.response) {
     // Server responded with error status
     const status = error.response.status;
+    if (status === HTTP_STATUS.UNAUTHORIZED && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise<{ token: string }>(function (resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((tokenObj) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization =
+                'Bearer ' + tokenObj.token;
+            }
+            return apiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+      originalRequest._retry = true;
+      isRefreshing = true;
+      try {
+        const authResponse = await authService.refreshToken();
+        const tokenObj = { token: authResponse.tokens.accessToken };
+        processQueue(null, tokenObj);
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${tokenObj.token}`;
+        }
+        return apiClient(originalRequest);
+      } catch (refreshError: any) {
+        processQueue(refreshError, null);
+        TokenService.clearTokens();
+        // Trigger client-side logout
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+        if (typeof window !== 'undefined') {
+          // Redirect to login after refresh fails
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
     const data = error.response.data as any;
-
     const apiError: ApiError = {
       code: data?.code || status.toString(),
       message: data?.message || 'Server error occurred',
@@ -78,25 +155,10 @@ const responseErrorInterceptor = async (error: AxiosError) => {
       field: data?.field,
       requestId: error.response.headers?.['x-request-id'],
     };
-
-    // Handle authentication errors
-    if (status === HTTP_STATUS.UNAUTHORIZED) {
-      // Clear stored tokens
-      removeStorageItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      removeStorageItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-
-      // Redirect to login (in a real app, you'd use your router)
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      TokenService.clearTokens();
-    }
-
     // Handle forbidden errors
     if (status === HTTP_STATUS.FORBIDDEN) {
       logger.warn('Forbidden access attempt', { url: originalRequest?.url });
     }
-
     logger.error('API Response Error', apiError);
     return Promise.reject(apiError);
   } else if (error.request) {

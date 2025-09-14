@@ -1,6 +1,7 @@
 // src/hooks/auth/useAuth.ts
-import { useAuth as useAuthContext } from '@/context/AuthContext';
-import type { UseAuthReturn } from '@/types/auth';
+import { useContext } from 'react';
+import { AuthContext } from '@/context/AuthContext';
+import type { AuthContextType } from '@/context/AuthContext';
 
 /**
  * Custom hook for accessing authentication state and actions
@@ -59,9 +60,10 @@ import type { UseAuthReturn } from '@/types/auth';
  * }
  * ```
  */
-export const useAuth = (): UseAuthReturn => {
-  return useAuthContext();
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
-
-// Re-export the hook as default for convenience
-export default useAuth;

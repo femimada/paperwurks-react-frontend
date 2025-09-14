@@ -173,7 +173,7 @@ export interface UseRegisterReturn
   // Field management
   focusField: (field: keyof RegisterFormData) => void;
   scrollToFirstError: () => void;
-  fieldRefs: React.MutableRefObject<
+  fieldRefs: React.RefObject<
     Partial<Record<keyof RegisterFormData, HTMLElement | null>>
   >;
 
@@ -377,7 +377,11 @@ export const useRegister = (): UseRegisterReturn => {
     const element = fieldRefs.current[field];
     if (element) {
       element.focus();
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        logger.warn('scrollIntoView is not available for field:', field);
+      }
     }
   }, []);
 
@@ -495,7 +499,7 @@ export const useRegister = (): UseRegisterReturn => {
           organization,
           acceptsTerms: data.acceptsTerms,
           acceptsMarketing: data.acceptsMarketing,
-        } as any);
+        });
 
         logger.info('Registration successful', {
           email: data.email,

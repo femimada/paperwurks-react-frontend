@@ -1,9 +1,10 @@
 // src/types/auth/auth.types.ts
 import type { UserRole, Permission } from '@/types/global.types';
-
+import type { LoginFormData as LoginRequest } from '@/hooks/auth';
 /**
  * User profile information
  */
+
 export interface UserProfile {
   phone?: string;
   avatar?: string;
@@ -68,17 +69,8 @@ export interface User {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  tokenType: string;
   expiresAt: string;
-  tokenType: 'Bearer';
-}
-
-/**
- * Login request payload
- */
-export interface LoginRequest {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
 }
 
 /**
@@ -138,7 +130,7 @@ export interface ResetPasswordRequest {
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
-  confirmPassword: string;
+  confirmPassword?: string;
 }
 
 /**
@@ -171,11 +163,11 @@ export interface AuthState {
 /**
  * Login form data
  */
-export interface LoginFormData {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
+// export interface LoginFormData {
+//   email: string;
+//   password: string;
+//   rememberMe: boolean;
+// }
 
 /**
  * Registration form data
