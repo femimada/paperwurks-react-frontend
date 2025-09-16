@@ -105,6 +105,7 @@ export interface AvatarProps extends BaseComponentProps {
   alt?: string;
   fallback?: string;
   size?: ComponentSize;
+  onError?: () => void;
 }
 
 /**
