@@ -1,16 +1,47 @@
-// src/services/auth/__tests__/authService.test.ts
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AuthService } from '../authService';
+
+vi.mock('@/services/api', () => ({
+  apiClient: {
+    post: vi.fn(),
+    get: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
+
+vi.mock('../tokenService', () => ({
+  TokenService: {
+    setTokens: vi.fn(),
+    clearTokens: vi.fn(),
+    getTokens: vi.fn(),
+    hasValidTokens: vi.fn(),
+    isTokenExpired: vi.fn(),
+  },
+}));
+
+vi.mock('@/shared/utils/logger', () => ({
+  logger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
+// Now import after mocks
 import { TokenService } from '../tokenService';
 import { apiClient } from '@/services/api';
 import { logger } from '@/shared/utils/logger';
+import type { LoginRequest, RegisterRequest } from '@/domains/auth/types';
+import { authService } from '../authService';
+
 import type {
-  RegisterRequest,
   ResetPasswordRequest,
   ChangePasswordRequest,
   User,
 } from '@/domains/auth/types/auth.types';
-import type { LoginFormData as LoginRequest } from '@/domains/auth/hooks';
+
 // Mock the API client
 vi.mock('@/services/api', () => ({
   apiClient: {
@@ -44,10 +75,7 @@ vi.mock('@/shared/utils/logger', () => ({
 }));
 
 describe('AuthService', () => {
-  let authService: AuthService;
-
   beforeEach(() => {
-    authService = new AuthService();
     vi.clearAllMocks();
     vi.mocked(TokenService.getTokens).mockClear();
   });
@@ -133,6 +161,7 @@ describe('AuthService', () => {
         lastName: 'User',
         role: 'owner',
         acceptsTerms: true,
+        acceptsMarketing: false,
       };
 
       const mockResponse = {
@@ -183,6 +212,7 @@ describe('AuthService', () => {
         lastName: 'User',
         role: 'owner',
         acceptsTerms: true,
+        acceptsMarketing: false,
       };
 
       const mockError = {
