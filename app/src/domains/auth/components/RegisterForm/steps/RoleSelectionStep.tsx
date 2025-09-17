@@ -1,6 +1,14 @@
-// src/features/auth/components/RegisterForm/steps/RoleSelectionStep.tsx
+// src/domains/auth/components/RegisterForm/steps/RoleSelectionStep.tsx
 import React, { useEffect } from 'react';
-import { Input } from '@/shared/components/ui';
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Label,
+} from '@/shared/components/ui';
 import { FieldError } from '../components/FieldError';
 import type {
   UseFormRegister,
@@ -10,6 +18,7 @@ import type {
 } from 'react-hook-form';
 import type { RegisterFormData } from '@/domains/auth/hooks/useRegister';
 import type { UserRole } from '@/shared/types/global.types';
+import type { Organization } from '@/domains/auth/types';
 
 interface RoleOption {
   value: UserRole;
@@ -30,6 +39,7 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
   register,
   errors,
   watch,
+  setValue,
   roleOptions,
   requiresOrganization,
 }) => {
@@ -45,10 +55,10 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">
+        <h2 className="text-xl font-semibold text-foreground mb-1">
           Select your role
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Choose the role that best describes your involvement in property
           transactions
         </p>
@@ -72,8 +82,8 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
                 transition-all duration-200
                 ${
                   selectedRole === option.value
-                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                    : 'border-border hover:border-border/80 hover:bg-accent/50'
                 }
               `}
               data-testid={`role-option-${option.value}`}
@@ -82,16 +92,16 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
                 {...register('role')}
                 type="radio"
                 value={option.value}
-                className="h-4 w-4 mt-0.5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                className="h-4 w-4 mt-0.5 text-primary border-input focus:ring-primary"
                 aria-describedby={`role-${option.value}-description`}
               />
               <div className="ml-3">
-                <span className="block text-sm font-medium text-gray-900">
+                <span className="block text-sm font-medium text-foreground">
                   {option.label}
                 </span>
                 <span
                   id={`role-${option.value}-description`}
-                  className="block text-sm text-gray-500 mt-1"
+                  className="block text-sm text-muted-foreground mt-1"
                 >
                   {option.description}
                 </span>
@@ -105,29 +115,27 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
       {/* Organization Details - Conditional */}
       {requiresOrganization && (
         <div
-          className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200"
+          className="space-y-4 p-4 bg-secondary/30 rounded-lg border border-border"
           role="group"
           aria-labelledby="organization-heading"
         >
           <h3
             id="organization-heading"
-            className="text-sm font-medium text-blue-900"
+            className="text-sm font-medium text-foreground"
           >
             Organization Information Required
           </h3>
 
-          <div>
-            <label
-              htmlFor="organizationName"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+          <div className="space-y-2">
+            <Label htmlFor="organizationName" className="text-sm font-medium">
               Organization name
-            </label>
+            </Label>
             <Input
               {...register('organizationName')}
               id="organizationName"
               type="text"
               placeholder="Enter your organization name"
+              className={errors.organizationName ? 'border-destructive' : ''}
               aria-invalid={!!errors.organizationName}
               aria-describedby={
                 errors.organizationName ? 'organizationName-error' : undefined
@@ -140,32 +148,35 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="organizationType"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+          <div className="space-y-2">
+            <Label htmlFor="organizationType" className="text-sm font-medium">
               Organization type
-            </label>
-            <select
-              {...register('organizationType')}
-              id="organizationType"
-              className={`
-                form-input w-full px-3 py-2 border rounded-md
-                ${errors.organizationType ? 'border-red-500' : 'border-gray-300'}
-                focus:ring-blue-500 focus:border-blue-500
-              `}
-              aria-invalid={!!errors.organizationType}
-              aria-describedby={
-                errors.organizationType ? 'organizationType-error' : undefined
+            </Label>
+            <Select
+              value={watch('organizationType') || ''}
+              onValueChange={(value) =>
+                setValue('organizationType', value as Organization['type'])
               }
-              data-testid="organizationType-select"
             >
-              <option value="">Select organization type</option>
-              <option value="estate_agency">Estate Agency</option>
-              <option value="law_firm">Law Firm</option>
-              <option value="property_company">Property Company</option>
-            </select>
+              <SelectTrigger
+                id="organizationType"
+                className={errors.organizationType ? 'border-destructive' : ''}
+                aria-invalid={!!errors.organizationType}
+                aria-describedby={
+                  errors.organizationType ? 'organizationType-error' : undefined
+                }
+                data-testid="organizationType-select"
+              >
+                <SelectValue placeholder="Select organization type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="estate_agency">Estate Agency</SelectItem>
+                <SelectItem value="law_firm">Law Firm</SelectItem>
+                <SelectItem value="property_company">
+                  Property Company
+                </SelectItem>
+              </SelectContent>
+            </Select>
             <FieldError
               error={errors.organizationType}
               id="organizationType-error"
@@ -176,12 +187,12 @@ export const RoleSelectionStep: React.FC<RoleSelectionStepProps> = ({
 
       {/* Role-specific information */}
       {selectedRole && (
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">
+        <div className="p-4 bg-muted/30 rounded-lg">
+          <h3 className="text-sm font-medium text-foreground mb-2">
             As a {roleOptions.find((r) => r.value === selectedRole)?.label},
             you'll be able to:
           </h3>
-          <ul className="text-sm text-gray-600 space-y-1">
+          <ul className="text-sm text-muted-foreground space-y-1">
             {selectedRole === 'owner' && (
               <>
                 <li>• Create and manage property packs</li>

@@ -6,6 +6,10 @@ import type { Property } from '@/domains/properties/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockExistingProperty: Property = {
+  ownerId: 'owner-1',
+  completionPercentage: 75,
+  isActive: true,
+  isArchived: false,
   id: 'property-1',
   title: 'Existing Property',
   description: 'A lovely existing property',
@@ -23,11 +27,21 @@ const mockExistingProperty: Property = {
   bathrooms: 2,
   askingPrice: 450000,
   status: 'draft',
+
   owner: {
     id: 'owner-1',
     firstName: 'John',
     lastName: 'Doe',
     email: 'john@example.com',
+    role: 'owner',
+    permissions: ['property:create', 'property:read', 'property:update'],
+    profile: {
+      phone: '+44 123 456 7890',
+      bio: 'Property owner for testing',
+    },
+    isEmailVerified: true,
+    createdAt: new Date('2023-01-01'),
+    updatedAt: new Date('2023-01-15'),
   },
   createdAt: new Date('2023-01-01'),
   updatedAt: new Date('2023-01-15'),
@@ -201,7 +215,9 @@ describe('PropertyForm Integration Tests', () => {
 
       // Enter invalid postcode
       await user.type(screen.getByLabelText(/postcode/i), 'INVALID');
-      await user.blur(screen.getByLabelText(/postcode/i));
+      const postcodeInput = screen.getByLabelText(/postcode/i);
+      await user.click(postcodeInput);
+      await user.tab(); // This triggers blur/validation
 
       await waitFor(() => {
         expect(
@@ -236,7 +252,7 @@ describe('PropertyForm Integration Tests', () => {
       // Enter invalid number for bedrooms
       const bedroomsInput = screen.getByLabelText(/bedrooms/i);
       await user.type(bedroomsInput, '-1');
-      await user.blur(bedroomsInput);
+      await user.tab();
 
       await waitFor(() => {
         expect(
@@ -311,10 +327,11 @@ describe('PropertyForm Integration Tests', () => {
     it('handles submission errors gracefully', async () => {
       const user = userEvent.setup();
 
-      // Mock submit function to reject
       const mockSubmitWithError = vi
         .fn()
-        .mockRejectedValue(new Error('Submission failed'));
+        .mockImplementation(
+          (): Promise<void> => Promise.reject(new Error('Submission failed'))
+        );
 
       render(
         <PropertyForm
@@ -342,10 +359,8 @@ describe('PropertyForm Integration Tests', () => {
     });
 
     it('shows loading state during submission', async () => {
-      const user = userEvent.setup();
-
       // Mock submit function with delay
-      const mockSubmitWithDelay = vi.fn(
+      const mockSubmitWithDelay = vi.fn<(data: any) => Promise<void>>(
         () => new Promise((resolve) => setTimeout(resolve, 100))
       );
 

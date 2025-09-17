@@ -29,7 +29,12 @@ const mockProperties = [
   {
     id: '1',
     title: 'Victorian Terrace House',
-    address: { line1: '123 Oak Street', city: 'London', postcode: 'SW1A 1AA' },
+    address: {
+      line1: '123 Oak Street',
+      city: 'London',
+      postcode: 'SW1A 1AA',
+      country: 'UK',
+    },
     propertyType: 'terraced' as const,
     tenure: 'freehold' as const,
     status: 'ready' as const,
@@ -42,6 +47,12 @@ const mockProperties = [
       firstName: 'John',
       lastName: 'Smith',
       email: 'john@example.com',
+      role: 'owner' as const,
+      permissions: ['property:create', 'property:read'],
+      profile: { phone: '', bio: '' },
+      isEmailVerified: true,
+      createdAt: new Date('2024-01-15'),
+      updatedAt: new Date('2024-03-01'),
     },
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-03-01'),
@@ -53,6 +64,7 @@ const mockProperties = [
       line1: '45 High Street',
       city: 'Manchester',
       postcode: 'M1 1AA',
+      country: 'UK',
     },
     propertyType: 'flat' as const,
     tenure: 'leasehold' as const,
@@ -66,11 +78,19 @@ const mockProperties = [
       firstName: 'Sarah',
       lastName: 'Jones',
       email: 'sarah@example.com',
+      role: 'owner' as const,
+      permissions: ['property:create', 'property:read'],
+      profile: { phone: '', bio: '' },
+      isEmailVerified: true,
+      createdAt: new Date('2024-02-10'),
+      updatedAt: new Date('2024-02-20'),
     },
     createdAt: new Date('2024-02-10'),
     updatedAt: new Date('2024-02-20'),
   },
 ];
+
+// ===============
 
 const mockPagination = {
   page: 1,
@@ -124,23 +144,11 @@ const AuthenticationTest: React.FC = () => {
 
 const PropertyManagementTest: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
 
   const handleCreateProperty = async (data: any) => {
-    console.log('Creating property:', data);
+    console.log('Creating property:', data, showCreateForm);
+
     setShowCreateForm(false);
-    // In real app, this would call the API
-    alert('Property created successfully! (This is a test)');
-  };
-
-  const handlePropertyView = (property: any) => {
-    setSelectedProperty(property.id);
-    console.log('Viewing property:', property);
-  };
-
-  const handlePropertyEdit = (property: any) => {
-    console.log('Editing property:', property);
-    alert(`Editing property: ${property.title} (This is a test)`);
   };
 
   return (
@@ -149,16 +157,17 @@ const PropertyManagementTest: React.FC = () => {
         <CardTitle>Property Management Test</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="list" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="list">
+          <TabsList>
             <TabsTrigger value="list">Property List</TabsTrigger>
-            <TabsTrigger value="create">Create Property</TabsTrigger>
+            <TabsTrigger value="create">Create Form</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="list" className="space-y-4">
+          <TabsContent value="list">
             <Alert>
               <AlertDescription>
-                📋 Testing PropertyGrid component with mock data
+                ➕ Testing PropertyGrid component - Responsive layout &
+                interactions
               </AlertDescription>
             </Alert>
 
@@ -166,25 +175,14 @@ const PropertyManagementTest: React.FC = () => {
               properties={mockProperties}
               totalCount={mockProperties.length}
               pagination={mockPagination}
-              onPropertyView={handlePropertyView}
-              onPropertyEdit={handlePropertyEdit}
               onCreateProperty={() => setShowCreateForm(true)}
             />
-
-            {selectedProperty && (
-              <Alert>
-                <AlertDescription>
-                  ✅ Property selection working - Selected ID:{' '}
-                  {selectedProperty}
-                </AlertDescription>
-              </Alert>
-            )}
           </TabsContent>
 
-          <TabsContent value="create" className="space-y-4">
+          <TabsContent value="create">
             <Alert>
               <AlertDescription>
-                ➕ Testing PropertyForm component - Multi-step creation flow
+                Testing PropertyForm component - Multi-step creation flow
               </AlertDescription>
             </Alert>
 
