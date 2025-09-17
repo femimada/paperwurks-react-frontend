@@ -15,7 +15,9 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "test:integration": "vitest --run src/tests/integration/",
+    "test:watch": "vitest --watch"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
