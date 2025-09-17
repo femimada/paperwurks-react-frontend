@@ -28,11 +28,26 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
+      ],
+      "@/app/*": [
+        "./src/app/*"
+      ],
+      "@/shared/*": [
+        "./src/shared/*"
+      ],
+      "@/domains/*": [
+        "./src/domains/*"
+      ],
+      "@/pages/*": [
+        "./src/pages/*"
+      ],
+      "@/tests/*": [
+        "./src/__tests__/*"
       ]
     }
   },
   "include": [
     "src"
-  ]
+  ],
 }

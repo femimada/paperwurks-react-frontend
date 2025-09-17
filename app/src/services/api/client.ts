@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from 'axios';
-import { API_CONFIG } from '@/constants/api';
+import { API_CONFIG } from '@/shared/constants/api';
 import { setupInterceptors } from './interceptors';
 
 /**

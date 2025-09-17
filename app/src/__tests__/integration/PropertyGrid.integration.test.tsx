@@ -1,9 +1,11 @@
 // src/tests/integration/PropertyGrid.integration.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PropertyGrid } from '@/features/properties/components/PropertyGrid';
-import type { PropertyListItem, PropertyFilters } from '@/types/property';
-import type { PaginationParams, SortParams } from '@/types/global.types';
+import { PropertyGrid } from '@/domains/properties/components/PropertyGrid';
+import type {
+  PropertyListItem,
+  PropertyFilters,
+} from '@/domains/properties/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock property data
@@ -31,6 +33,7 @@ const mockProperties: PropertyListItem[] = [
     },
     createdAt: new Date('2023-01-15'),
     updatedAt: new Date('2023-01-20'),
+    completionPercentage: 0,
   },
   {
     id: '2',
@@ -55,6 +58,7 @@ const mockProperties: PropertyListItem[] = [
     },
     createdAt: new Date('2023-02-01'),
     updatedAt: new Date('2023-02-05'),
+    completionPercentage: 0,
   },
   {
     id: '3',
@@ -79,6 +83,7 @@ const mockProperties: PropertyListItem[] = [
     },
     createdAt: new Date('2023-01-10'),
     updatedAt: new Date('2023-01-15'),
+    completionPercentage: 0,
   },
 ];
 

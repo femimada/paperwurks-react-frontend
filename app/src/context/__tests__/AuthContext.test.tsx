@@ -3,9 +3,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { AuthProvider, useAuth } from '../AuthContext';
-import type { LoginRequest, User } from '@/types/auth';
-import type { Permission, UserRole } from '@/types/global.types';
-import { authService, TokenService } from '@/services/auth';
+import type { LoginRequest, User } from '@/domains/auth/types';
+import type { Permission, UserRole } from '@/shared/types/global.types';
+import { authService, TokenService } from '@/domains/auth';
 
 vi.mock('@/services/auth', () => ({
   authService: {
@@ -24,7 +24,7 @@ vi.mock('@/services/auth', () => ({
 }));
 
 // Mock logger
-vi.mock('@/utils/logger', () => ({
+vi.mock('@/shared/utils/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 

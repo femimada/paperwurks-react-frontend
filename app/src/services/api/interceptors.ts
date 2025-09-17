@@ -6,12 +6,12 @@ import type {
   InternalAxiosRequestConfig,
   AxiosResponse,
 } from 'axios';
-import type { ApiError, NetworkError } from '@/types/api/error.types';
-import { HTTP_STATUS } from '@/constants/api';
-import { logger } from '@/utils/logger';
-import { TokenService } from '../auth/tokenService';
-import { authService } from '../auth';
+import type { ApiError, NetworkError } from '@/shared/types/api/error.types';
+import { HTTP_STATUS } from '@/shared/constants/api';
+import { logger } from '@/shared/utils/logger';
+
 import { apiClient } from './client';
+import { authService, TokenService } from '@/domains/auth';
 
 let isRefreshing = false;
 

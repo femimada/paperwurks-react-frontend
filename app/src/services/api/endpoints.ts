@@ -1,5 +1,5 @@
-import { API_ENDPOINTS } from '@/constants/api';
-import type { ApiEndpoint } from '@/types/api/common.types';
+import { API_ENDPOINTS } from '@/shared/constants/api';
+import type { ApiEndpoint } from '@/shared/types/api/common.types';
 
 /**
  * API endpoint configurations with metadata
