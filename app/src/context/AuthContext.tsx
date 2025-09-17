@@ -7,12 +7,13 @@ import {
   useEffect,
   type ReactNode,
 } from 'react';
-import { authService } from '@/services/auth';
-import { TokenService } from '@/services/auth/tokenService';
-import { logger } from '@/utils/logger';
-import type { User, AuthResponse, RegisterRequest } from '@/types/auth';
-import type { LoginFormData as LoginRequest } from '@/hooks/auth';
-import type { Permission } from '@/types/global.types';
+
+import { TokenService } from '@/domains/auth/services/tokenService';
+import { logger } from '@/shared/utils/logger';
+import type { User, AuthResponse, RegisterRequest } from '@/domains/auth/types';
+import type { LoginFormData as LoginRequest } from '@/domains/auth/components';
+import type { Permission } from '@/shared/types/global.types';
+import { authService } from '@/domains/auth';
 
 // Enhanced types for better safety
 type AuthErrorPayload = { message: string; code?: string };

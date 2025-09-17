@@ -1,8 +1,8 @@
 // src/tests/integration/PropertyCard.integration.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PropertyCard } from '@/features/properties/components/PropertyCard';
-import type { PropertyListItem } from '@/types/property';
+import { PropertyCard } from '@/domains/properties/components/PropertyCard';
+import type { PropertyListItem } from '@/domains/properties/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockProperty: PropertyListItem = {
@@ -20,7 +20,6 @@ const mockProperty: PropertyListItem = {
   askingPrice: 550000,
   bedrooms: 3,
   bathrooms: 2,
-  receptionRooms: 2,
   owner: {
     id: 'owner-1',
     firstName: 'Alice',
@@ -29,6 +28,7 @@ const mockProperty: PropertyListItem = {
   },
   createdAt: new Date('2023-03-01'),
   updatedAt: new Date('2023-03-15'),
+  completionPercentage: 75,
 };
 
 const mockPropertyWithoutOptionals: PropertyListItem = {
@@ -51,6 +51,7 @@ const mockPropertyWithoutOptionals: PropertyListItem = {
   },
   createdAt: new Date('2023-02-15'),
   updatedAt: new Date('2023-02-20'),
+  completionPercentage: 40,
 };
 
 describe('PropertyCard Integration Tests', () => {

@@ -1,13 +1,9 @@
-/* Paperwurks CSS - Tailwind v4 Design System */
+/* Paperwurks CSS - shadcn/ui Compatible Design System */
 @import './base.css';
 @import './components.css';
 @import './utilities.css';
 
-/* App-Specific Styles */
-.modal-overlay {
-  backdrop-filter: blur(4px);
-}
-
+/* Global app styles */
 html {
   scroll-behavior: smooth;
 }
@@ -43,18 +39,13 @@ html {
   }
 }
 
-/* Custom app utilities */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    @apply border-2;
   }
 
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  .btn {
+    @apply border-2;
   }
 }

@@ -1,69 +1,10 @@
-/* Utility Classes - Tailwind v4 */
+/* Utility Classes - shadcn/ui Compatible */
 @layer utilities {
-  /* Color utilities */
-  .bg-primary {
-    @apply bg-white;
-  }
-  .bg-secondary {
-    @apply bg-gray-50;
-  }
-  .bg-tertiary {
-    @apply bg-gray-100;
-  }
+  /* =================
+     App-specific utilities that extend shadcn/ui
+     ================= */
 
-  .text-primary {
-    @apply text-gray-900;
-  }
-  .text-secondary {
-    @apply text-gray-600;
-  }
-  .text-tertiary {
-    @apply text-gray-400;
-  }
-  .text-inverse {
-    @apply text-white;
-  }
-
-  /* Border utilities */
-  .border-primary {
-    @apply border-gray-200;
-  }
-  .border-secondary {
-    @apply border-gray-300;
-  }
-
-  /* Spacing utilities */
-  .gap-xs {
-    @apply gap-1;
-  }
-  .gap-sm {
-    @apply gap-2;
-  }
-  .gap-md {
-    @apply gap-4;
-  }
-  .gap-lg {
-    @apply gap-6;
-  }
-  .gap-xl {
-    @apply gap-8;
-  }
-
-  /* Layout utilities */
-  .container-sm {
-    @apply max-w-2xl mx-auto;
-  }
-  .container-md {
-    @apply max-w-4xl mx-auto;
-  }
-  .container-lg {
-    @apply max-w-6xl mx-auto;
-  }
-  .container-xl {
-    @apply max-w-7xl mx-auto;
-  }
-
-  /* Safe area utilities */
+  /* Safe area utilities for mobile */
   .safe-top {
     padding-top: env(safe-area-inset-top);
   }
@@ -91,11 +32,6 @@
     }
   }
 
-  /* Focus utilities */
-  .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-  }
-
   /* Print utilities */
   @media print {
     .print-hidden {
@@ -105,42 +41,23 @@
       display: block !important;
     }
   }
-  /* Custom spacing using CSS variables */
-  .m-1 {
-    margin: var(--space-1, 0.25rem);
-  }
-  .m-2 {
-    margin: var(--space-2, 0.5rem);
-  }
-  .m-3 {
-    margin: var(--space-3, 0.75rem);
-  }
-  .m-4 {
-    margin: var(--space-4, 1rem);
-  }
-  .m-5 {
-    margin: var(--space-5, 1.25rem);
-  }
-  .m-6 {
-    margin: var(--space-6, 1.5rem);
-  }
-  .m-8 {
-    margin: var(--space-8, 2rem);
+
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
   }
 
-  /* Remove responsive utilities that use semantic colors */
-  /* These are not needed since we're using standard Tailwind classes */
+  /* Scrollbar utilities */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 
-  /* Remove dark mode semantic references */
-  @media (prefers-color-scheme: dark) {
-    .dark\:bg-neutral-900 {
-      background-color: #171717;
-    }
-    .dark\:text-neutral-100 {
-      color: #f5f5f5;
-    }
-    .dark\:border-neutral-700 {
-      border-color: #404040;
-    }
+  /* Modal utilities */
+  .modal-overlay {
+    backdrop-filter: blur(4px);
   }
 }

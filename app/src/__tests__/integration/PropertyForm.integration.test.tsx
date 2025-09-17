@@ -1,8 +1,8 @@
 // src/tests/integration/PropertyForm.integration.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PropertyForm } from '@/features/properties/components/PropertyForm';
-import type { Property, CreatePropertyData } from '@/types/property';
+import { PropertyForm } from '@/domains/properties/components/PropertyForm';
+import type { Property } from '@/domains/properties/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockExistingProperty: Property = {
