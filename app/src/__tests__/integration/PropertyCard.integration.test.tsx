@@ -5,6 +5,18 @@ import { PropertyCard } from '@/domains/properties/components/PropertyCard';
 import type { PropertyListItem } from '@/domains/properties/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock date formatting
+vi.mock('@/shared/utils/date', () => ({
+  formatDate: (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  },
+}));
+
 const mockProperty: PropertyListItem = {
   id: 'test-property-1',
   title: 'Beautiful Victorian Home',

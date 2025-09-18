@@ -1,6 +1,8 @@
-// src/tests/setup.ts
+// src/__tests__/setup/setup.ts - Fixed version
 import '@testing-library/jest-dom';
-import { afterAll, beforeAll, vi } from 'vitest';
+import { afterAll, beforeAll, vi, beforeEach } from 'vitest';
+
+// Global test setup - runs before all tests
 
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
@@ -23,8 +25,8 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
@@ -33,6 +35,11 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn();
+
+// Mock hasPointerCapture - fixes Radix UI issues
+Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
+Element.prototype.setPointerCapture = vi.fn();
+Element.prototype.releasePointerCapture = vi.fn();
 
 // Mock environment variables
 vi.mock('@/shared/utils/env', () => ({
@@ -45,70 +52,14 @@ vi.mock('@/shared/utils/env', () => ({
   }),
 }));
 
-// Mock React Router
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => vi.fn(),
-    useLocation: () => ({
-      pathname: '/test',
-      search: '',
-      hash: '',
-      state: null,
-    }),
-    useParams: () => ({}),
-    useSearchParams: () => [new URLSearchParams(), vi.fn()],
-  };
-});
-
-// Mock API client
-vi.mock('@/services/api', () => ({
-  apiClient: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
-    patch: vi.fn(),
-  },
-}));
-
-// Mock property service
-vi.mock('@/domains/properties/services/propertyService', () => ({
-  propertyService: {
-    getProperties: vi.fn(),
-    getProperty: vi.fn(),
-    createProperty: vi.fn(),
-    updateProperty: vi.fn(),
-    deleteProperty: vi.fn(),
-    searchProperties: vi.fn(),
-  },
-}));
-
-// Mock auth service
-vi.mock('@/domains/auth/components/hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: {
-      id: 'test-user',
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      role: 'owner',
-    },
-    isAuthenticated: true,
-    login: vi.fn(),
-    logout: vi.fn(),
-    isLoading: false,
-  }),
-}));
-
 // Console spy to suppress expected errors in tests
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is deprecated')
+      (args[0].includes('Warning: ReactDOM.render is deprecated') ||
+        args[0].includes('target.hasPointerCapture is not a function'))
     ) {
       return;
     }
@@ -118,4 +69,9 @@ beforeAll(() => {
 
 afterAll(() => {
   console.error = originalError;
+});
+
+// Clear all mocks between tests
+beforeEach(() => {
+  vi.clearAllMocks();
 });
