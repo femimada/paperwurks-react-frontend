@@ -8,7 +8,10 @@ import type {
   UpdatePropertyData,
   PropertyFilters,
 } from '@/domains/properties/types';
-import type { ApiResponse, PaginatedResponse } from '@/shared/types/api/common.types';
+import type {
+  ApiResponse,
+  PaginatedResponse,
+} from '@/shared/types/api/common.types';
 
 // Mock the API client
 vi.mock('@/services/api', () => ({

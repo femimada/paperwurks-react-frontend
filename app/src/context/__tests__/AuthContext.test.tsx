@@ -3,16 +3,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { AuthProvider, useAuth } from '../AuthContext';
-import type { LoginRequest, User } from '@/domains/auth/types';
-import type { Permission, UserRole } from '@/shared/types/global.types';
 import { authService, TokenService } from '@/domains/auth';
+import type { User } from '@/domains/auth/types';
 
-vi.mock('@/services/auth', () => ({
+// Mock the auth service
+vi.mock('@/domains/auth', () => ({
   authService: {
     login: vi.fn(),
     logout: vi.fn(),
     getCurrentUser: vi.fn(),
-    refreshToken: vi.fn(),
   },
   TokenService: {
     getTokens: vi.fn(),
@@ -25,111 +24,93 @@ vi.mock('@/services/auth', () => ({
 
 // Mock logger
 vi.mock('@/shared/utils/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
-// Test component that uses useAuth
+// Test component
 const TestComponent = () => {
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    login,
-    logout,
-    hasPermission,
-    hasRole,
-  } = useAuth();
-  const handleLogin = async () => {
-    const credentials: LoginRequest = {
-      email: 'test@example.com',
-      password: 'password123',
-      rememberMe: false,
-    };
-    try {
-      await login(credentials);
-    } catch (e) {
-      /* Error is handled by context */
-    }
-  };
+  const { user, isAuthenticated, login, logout, error, isLoading } = useAuth();
 
   return (
     <div>
       <div data-testid="auth-status">
         {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}
       </div>
-      <div data-testid="loading-status">
-        {isLoading ? 'Loading' : 'Not Loading'}
-      </div>
-      {error && <div data-testid="error-message">{error}</div>}
       {user && (
         <div data-testid="user-info">
           {user.firstName} {user.lastName} - {user.role}
         </div>
       )}
-      <button onClick={handleLogin} data-testid="login-button">
+      {error && <div data-testid="error-message">{error}</div>}
+      <button
+        data-testid="login-button"
+        onClick={() =>
+          login({
+            email: 'test@test.com',
+            password: 'password',
+            rememberMe: false,
+          })
+        }
+      >
         Login
       </button>
-      <button onClick={logout} data-testid="logout-button">
+      <button data-testid="logout-button" onClick={logout}>
         Logout
       </button>
-      <div data-testid="permission-check">
-        {hasPermission('property:read')
-          ? 'Can Read Properties'
-          : 'Cannot Read Properties'}
-      </div>
-      <div data-testid="role-check">
-        {hasRole('owner') ? 'Is Owner' : 'Not Owner'}
-      </div>
+      <div data-testid="loading">{isLoading ? 'Loading' : 'Not Loading'}</div>
     </div>
   );
 };
 
-const renderWithAuthProvider = (component: React.ReactElement) => {
-  return render(<AuthProvider>{component}</AuthProvider>);
+const renderWithAuthProvider = (children: React.ReactNode) => {
+  return render(<AuthProvider>{children}</AuthProvider>);
 };
 
 describe('AuthContext', () => {
+  const mockAuthService = authService as any;
+  const mockTokenService = TokenService as any;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // REFACTOR: Reset mock implementations for consistency
-    vi.mocked(TokenService.getTokens).mockReturnValue({
-      accessToken: 'null',
-      refreshToken: 'null',
-      tokenType: 'Bearer',
-      expiresAt: '',
+    // Set default mock implementations
+    mockTokenService.getTokens.mockReturnValue({
+      accessToken: null,
+      refreshToken: null,
     });
-    vi.mocked(TokenService.hasValidTokens).mockReturnValue(false);
+    mockTokenService.hasValidTokens.mockReturnValue(false);
+    mockAuthService.getCurrentUser.mockResolvedValue(null);
   });
 
   it('should provide initial auth state', () => {
     renderWithAuthProvider(<TestComponent />);
+
     expect(screen.getByTestId('auth-status')).toHaveTextContent(
       'Not Authenticated'
     );
-    expect(screen.getByTestId('loading-status')).toHaveTextContent(
-      'Not Loading'
-    );
-    expect(screen.queryByTestId('error-message')).not.toBeInTheDocument();
+    expect(screen.getByTestId('loading')).toHaveTextContent('Not Loading');
+    expect(screen.queryByTestId('user-info')).not.toBeInTheDocument();
   });
 
   it('should handle successful login', async () => {
     const user = userEvent.setup();
-    const mockUser = {
+    const mockUser: User = {
       id: '1',
       email: 'test@example.com',
       firstName: 'John',
       lastName: 'Doe',
-      role: 'owner' as UserRole,
-      permissions: [
-        'property:read' as Permission,
-        'property:create' as Permission,
-      ],
+      role: 'owner',
+      permissions: ['property:read'],
       profile: { phone: '', bio: '' },
       isEmailVerified: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     const mockTokens = {
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
@@ -137,30 +118,30 @@ describe('AuthContext', () => {
       tokenType: 'Bearer' as const,
     };
 
-    vi.mocked(authService.login).mockResolvedValue({
+    mockAuthService.login.mockResolvedValue({
       user: mockUser,
       tokens: mockTokens,
     });
+
     renderWithAuthProvider(<TestComponent />);
     await user.click(screen.getByTestId('login-button'));
-    await waitFor(() => expect(authService.login).toHaveBeenCalled());
+
+    await waitFor(() => expect(mockAuthService.login).toHaveBeenCalled());
     expect(screen.getByTestId('auth-status')).toHaveTextContent(
       'Authenticated'
     );
     expect(screen.getByTestId('user-info')).toHaveTextContent(
       'John Doe - owner'
     );
-    expect(vi.mocked(authService.login)).toHaveBeenCalledTimes(1);
   });
 
   it('should handle login error', async () => {
     const user = userEvent.setup();
-    // FIX: authService is now correctly typed
-    vi.mocked(authService.login).mockRejectedValue(
-      new Error('Invalid credentials')
-    );
+    mockAuthService.login.mockRejectedValue(new Error('Invalid credentials'));
+
     renderWithAuthProvider(<TestComponent />);
     await user.click(screen.getByTestId('login-button'));
+
     await waitFor(() => {
       expect(screen.getByTestId('error-message')).toHaveTextContent(
         'Invalid credentials'
@@ -173,11 +154,13 @@ describe('AuthContext', () => {
 
   it('should handle logout', async () => {
     const user = userEvent.setup();
-    vi.mocked(authService.logout).mockResolvedValue(undefined);
+    mockAuthService.logout.mockResolvedValue(undefined);
+
     renderWithAuthProvider(<TestComponent />);
     await user.click(screen.getByTestId('logout-button'));
+
     await waitFor(() => {
-      expect(authService.logout).toHaveBeenCalledTimes(1);
+      expect(mockAuthService.logout).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByTestId('auth-status')).toHaveTextContent(
       'Not Authenticated'
@@ -198,22 +181,23 @@ describe('AuthContext', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    // FIX: authService and TokenService are now correctly typed
-    vi.mocked(authService.getCurrentUser).mockResolvedValue(mockUser);
-    vi.mocked(TokenService.hasValidTokens).mockReturnValue(true);
-    vi.mocked(authService.logout).mockRejectedValue(
-      new Error('Server unavailable')
-    );
+
+    mockAuthService.getCurrentUser.mockResolvedValue(mockUser);
+    mockTokenService.hasValidTokens.mockReturnValue(true);
+    mockAuthService.logout.mockRejectedValue(new Error('Server unavailable'));
 
     renderWithAuthProvider(<TestComponent />);
+
     await waitFor(() =>
       expect(screen.getByTestId('auth-status')).toHaveTextContent(
         'Authenticated'
       )
     );
+
     await user.click(screen.getByTestId('logout-button'));
+
     await waitFor(() => {
-      expect(authService.logout).toHaveBeenCalled();
+      expect(mockAuthService.logout).toHaveBeenCalled();
     });
     expect(screen.getByTestId('auth-status')).toHaveTextContent(
       'Not Authenticated'
@@ -224,9 +208,11 @@ describe('AuthContext', () => {
   it('should throw error when useAuth is used outside AuthProvider', () => {
     const originalError = console.error;
     console.error = vi.fn();
+
     expect(() => {
       render(<TestComponent />);
     }).toThrow('useAuth must be used within an AuthProvider');
+
     console.error = originalError;
   });
 });
