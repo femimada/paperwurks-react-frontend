@@ -186,11 +186,58 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
       : undefined,
   };
 
-  const defaultValues = PropertyFormSchema.parse(looseDefaults);
+  const getDefaultValues = (): PropertyFormData => {
+    // Helper function to safely convert strings to numbers
+    const safeNumber = (value: any): number | undefined => {
+      if (value === null || value === undefined || value === '')
+        return undefined;
+      const num = Number(value);
+      return isNaN(num) ? undefined : num;
+    };
+
+    const defaults = {
+      title: property?.title || '',
+      description: property?.description || '',
+      address: {
+        line1: property?.address?.line1 || '',
+        line2: property?.address?.line2 || '',
+        city: property?.address?.city || '',
+        county: property?.address?.county || '',
+        postcode: property?.address?.postcode || '',
+        country: property?.address?.country || 'UK',
+      },
+      propertyType: (property?.propertyType || 'detached') as any,
+      tenure: (property?.tenure || 'freehold') as any,
+      bedrooms: safeNumber(property?.bedrooms),
+      bathrooms: safeNumber(property?.bathrooms),
+      receptionRooms: safeNumber(property?.receptionRooms),
+      floorArea: safeNumber(property?.floorArea),
+      plotSize: safeNumber(property?.plotSize),
+      yearBuilt: safeNumber(property?.yearBuilt),
+      councilTaxBand: property?.councilTaxBand || '',
+      energyRating: property?.energyRating || '',
+      askingPrice: safeNumber(property?.askingPrice),
+      estimatedValue: safeNumber(property?.estimatedValue),
+      monthlyServiceCharge: safeNumber(property?.monthlyServiceCharge),
+      groundRent: safeNumber(property?.groundRent),
+      leaseYearsRemaining: safeNumber(property?.leaseYearsRemaining),
+      freeholder: property?.freeholder || '',
+      managementCompany: property?.managementCompany || '',
+      keyFeatures: property?.keyFeatures || [],
+      nearbyAmenities: property?.nearbyAmenities || [],
+      targetCompletionDate: property?.targetCompletionDate
+        ? new Date(property.targetCompletionDate)
+        : undefined,
+    };
+
+    return defaults as PropertyFormData;
+  };
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(PropertyFormSchema),
-    defaultValues,
+    mode: 'onBlur',
+    reValidateMode: 'onBlur',
+    defaultValues: getDefaultValues(),
   });
 
   const {

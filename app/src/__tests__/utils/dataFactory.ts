@@ -2,7 +2,6 @@
 import type {
   PropertyListItem,
   CreatePropertyData,
-  UpdatePropertyData,
   PropertyFilters,
 } from '@/domains/properties/types';
 import type { User } from '@/domains/auth/types';
@@ -48,7 +47,6 @@ export class PropertyListItemFactory extends BaseFactory<PropertyListItem> {
       askingPrice: 750000,
       bedrooms: 4,
       bathrooms: 3,
-      receptionRooms: 2,
       address: {
         line1: '123 Oak Street',
         city: 'London',
@@ -82,9 +80,7 @@ export class PropertyListItemFactory extends BaseFactory<PropertyListItem> {
       bathrooms: 2,
       address: {
         line1: '42 Maple Street',
-        line2: '',
         city: 'Edinburgh',
-        county: 'Midlothian',
         postcode: 'EH1 2AB',
         country: 'UK',
       },
@@ -109,12 +105,9 @@ export class PropertyListItemFactory extends BaseFactory<PropertyListItem> {
       askingPrice: 300000,
       bedrooms: 2,
       bathrooms: 1,
-      receptionRooms: 1,
       address: {
         line1: '456 High Street',
-        line2: 'Flat 4B',
         city: 'Manchester',
-        county: 'Greater Manchester',
         postcode: 'M1 1AA',
         country: 'UK',
       },
@@ -137,7 +130,6 @@ export class PropertyListItemFactory extends BaseFactory<PropertyListItem> {
       askingPrice: undefined,
       bedrooms: undefined,
       bathrooms: undefined,
-      receptionRooms: undefined,
       completionPercentage: 20,
     });
   }
