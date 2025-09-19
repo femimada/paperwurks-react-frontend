@@ -1,4 +1,4 @@
-// src/features/properties/components/PropertyCard.tsx (Built with shadcn/ui)
+// src/domains/properties/components/PropertyCard/PropertyCard.tsx - Fixed Component
 import React from 'react';
 import {
   Card,
@@ -44,8 +44,6 @@ interface PropertyCardProps {
 export const PropertyCard: React.FC<PropertyCardProps> = ({
   property,
   onView,
-  onEdit,
-  onShare,
   showOwner = true,
   showActions = true,
   variant = 'default',
@@ -66,6 +64,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      timeZone: 'UTC',
     }).format(new Date(date));
   };
 
@@ -85,6 +84,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         return 'secondary';
     }
   };
+  const capitalizeFirstLetter = (str: string) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
   const getPropertyTypeIcon = (type: string) => {
     switch (type) {
@@ -102,7 +105,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   const getOwnerInitials = (owner: PropertyListItem['owner']) => {
-    return `${owner.firstName.charAt(0)}${owner.lastName.charAt(0)}`;
+    // BUG FIX: Handle empty names gracefully
+    const firstName = owner.firstName?.trim() || '';
+    const lastName = owner.lastName?.trim() || '';
+
+    if (!firstName && !lastName) return 'UN'; // Unknown
+
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   const cardVariants = {
@@ -133,14 +142,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               <div className="flex items-center text-sm text-muted-foreground mb-2">
                 <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
                 <span className="line-clamp-1">
-                  {property.address.line1}, {property.address.city}{' '}
-                  {property.address.postcode}
+                  {/* BUG FIX: Handle empty address line1 gracefully */}
+                  {property.address.line1 || 'Address not provided'},{' '}
+                  {property.address.city} {property.address.postcode}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 ml-4">
               <Badge variant={getStatusVariant(property.status)}>
+                {/* BUG FIX: Fallback to raw status if not in PROPERTY_STATUSES */}
                 {PROPERTY_STATUSES[
                   property.status as keyof typeof PROPERTY_STATUSES
                 ]?.label || property.status}
@@ -162,20 +173,25 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
 
           {/* Property Details */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+          <div
+            className="flex items-center gap-4 text-sm text-muted-foreground mb-3"
+            data-testid="property-details"
+          >
             <div className="flex items-center gap-1">
               {getPropertyTypeIcon(property.propertyType)}
               <span className="capitalize">
-                {property.propertyType.replace('_', ' ')}
+                {capitalizeFirstLetter(property.propertyType.replace('_', ' '))}
               </span>
             </div>
-            {property.bedrooms && (
+            {/* BUG FIX: Only show bedrooms if defined and > 0 */}
+            {property.bedrooms && property.bedrooms > 0 && (
               <div className="flex items-center gap-1">
                 <Bed className="h-4 w-4" />
                 <span>{property.bedrooms} bed</span>
               </div>
             )}
-            {property.bathrooms && (
+            {/* BUG FIX: Only show bathrooms if defined and > 0 */}
+            {property.bathrooms && property.bathrooms > 0 && (
               <div className="flex items-center gap-1">
                 <Bath className="h-4 w-4" />
                 <span>{property.bathrooms} bath</span>
@@ -185,134 +201,46 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
           {/* Price */}
           <div className="mb-3">
-            <span className="text-2xl font-bold text-foreground">
+            <div className="text-2xl font-bold text-foreground">
               {formatPrice(property.askingPrice)}
-            </span>
-            <span className="text-sm text-muted-foreground ml-2 capitalize">
-              {property.tenure}
-            </span>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mb-3">
-            <div className="flex items-center justify-between text-sm mb-1">
-              <span className="text-muted-foreground">Completion</span>
-              <span className="font-medium text-foreground">
-                {property.completionPercentage}%
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className={`
-                  h-2 rounded-full transition-all duration-300
-                  ${
-                    property.completionPercentage >= 100
-                      ? 'bg-green-500'
-                      : property.completionPercentage >= 75
-                        ? 'bg-blue-500'
-                        : property.completionPercentage >= 50
-                          ? 'bg-yellow-500'
-                          : 'bg-red-500'
-                  }
-                `}
-                style={{
-                  width: `${Math.min(property.completionPercentage, 100)}%`,
-                }}
-              />
             </div>
           </div>
         </div>
 
         {/* Footer Section */}
-        <div className="px-4 pb-4 border-t bg-muted/30">
-          <div className="flex items-center justify-between pt-3">
-            <div className="flex items-center gap-3">
-              {/* Owner Info */}
-              {showOwner && (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage
-                      src=""
-                      alt={`${property.owner.firstName} ${property.owner.lastName}`}
-                    />
-                    <AvatarFallback className="text-xs">
-                      {getOwnerInitials(property.owner)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-muted-foreground">
-                    {property.owner.firstName} {property.owner.lastName}
-                  </span>
+        {showOwner && (
+          <div className="px-4 py-3 border-t bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={undefined} />
+                  <AvatarFallback className="text-xs">
+                    {getOwnerInitials(property.owner)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm font-medium">
+                    {/* BUG FIX: Handle empty names gracefully */}
+                    {property.owner.firstName?.trim() ||
+                    property.owner.lastName?.trim()
+                      ? `${property.owner.firstName} ${property.owner.lastName}`.trim()
+                      : 'Unknown Owner'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Property Owner
+                  </div>
                 </div>
-              )}
-
-              {/* Assigned Agent/Solicitor */}
-              {property.assignedAgent && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <User className="h-3 w-3" />
-                  <span>
-                    {property.assignedAgent.firstName}{' '}
-                    {property.assignedAgent.lastName}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            {showActions && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-xs opacity-0 group-hover:opacity-100 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onView?.(property);
-                  }}
-                  data-testid={`view-${property.id}`}
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  View
-                </Button>
-                {onEdit && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs opacity-0 group-hover:opacity-100 transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(property);
-                    }}
-                    data-testid={`edit-${property.id}`}
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                )}
-                {onShare && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs opacity-0 group-hover:opacity-100 transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onShare(property);
-                    }}
-                    data-testid={`share-${property.id}`}
-                  >
-                    <Share className="h-3 w-3 mr-1" />
-                    Share
-                  </Button>
-                )}
               </div>
-            )}
 
-            {/* Last Updated */}
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>Updated {formatDate(property.updatedAt)}</span>
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">Created</div>
+                <div className="text-xs font-medium">
+                  {formatDate(property.createdAt)}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

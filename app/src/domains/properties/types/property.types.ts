@@ -333,9 +333,6 @@ export interface PropertyExportData {
   exportedBy: string;
 }
 
-/**
- * Document invitation data - NEW: For inviting sellers to upload documents
- */
 export interface DocumentInvitation {
   id: string;
   propertyId: string;
