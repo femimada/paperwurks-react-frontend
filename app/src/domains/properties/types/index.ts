@@ -16,6 +16,7 @@ export type {
   PropertyImportData,
   PropertyImportError,
   PropertyExportData,
+  DocumentInvitation,
 } from './property.types';
 
 export type {

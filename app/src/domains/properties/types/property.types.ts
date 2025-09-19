@@ -1,4 +1,4 @@
-// src/types/property/property.types.ts
+// src/domains/properties/types/property.types.ts
 import type {
   BaseEntity,
   Address,
@@ -20,6 +20,7 @@ export interface Property extends BaseEntity {
   propertyType: PropertyType;
   tenure: PropertyTenure;
   status: PropertyStatus;
+  fileReference: string; // NEW: Agent's internal case/file reference
 
   // Property details
   bedrooms?: number;
@@ -71,16 +72,18 @@ export interface Property extends BaseEntity {
 }
 
 /**
- * Property creation data
+ * Property creation data - Minimal Quick-Start fields
  */
 export interface CreatePropertyData {
-  title: string;
-  description?: string;
+  // Essential Quick-Start fields only
+  title: string; // Auto-generated from fileReference
   address: Address;
-  propertyType: PropertyType;
   tenure: PropertyTenure;
+  fileReference: string; // NEW: Required field for Quick-Start workflow
+  propertyType: PropertyType; // Default to 'detached', can be updated later
 
-  // Optional property details
+  // Optional fields (can be added later via edit)
+  description?: string;
   bedrooms?: number;
   bathrooms?: number;
   receptionRooms?: number;
@@ -90,22 +93,22 @@ export interface CreatePropertyData {
   councilTaxBand?: string;
   energyRating?: string;
 
-  // Financial information
+  // Financial information (optional)
   askingPrice?: number;
   estimatedValue?: number;
   monthlyServiceCharge?: number;
   groundRent?: number;
 
-  // Leasehold specific
+  // Leasehold specific (optional)
   leaseYearsRemaining?: number;
   freeholder?: string;
   managementCompany?: string;
 
-  // Assignments
+  // Assignments (optional)
   assignedAgentId?: string;
   assignedSolicitorId?: string;
 
-  // Additional data
+  // Additional data (optional)
   keyFeatures?: string[];
   nearbyAmenities?: string[];
   targetCompletionDate?: Date;
@@ -145,6 +148,7 @@ export interface PropertyFilters {
   city?: string;
   bedrooms?: number;
   bathrooms?: number;
+  fileReference?: string; // NEW: Filter by file reference
 }
 
 /**
@@ -157,6 +161,7 @@ export interface PropertyListItem {
   propertyType: PropertyType;
   tenure: PropertyTenure;
   status: PropertyStatus;
+  fileReference: string; // NEW: Display in property lists
   askingPrice?: number;
   bedrooms?: number;
   bathrooms?: number;
@@ -200,7 +205,7 @@ export interface PropertyDocument {
   thumbnailUrl?: string;
   fileSize: number;
   mimeType: string;
-  documentType: 'floorplan' | 'epc' | 'brochure' | 'other';
+  documentType: 'floorplan' | 'epc' | 'brochure' | 'legal' | 'other';
   uploadedAt: Date;
   uploadedBy: string;
 }
@@ -244,6 +249,8 @@ export type PropertyActivityType =
   | 'document_removed'
   | 'agent_assigned'
   | 'solicitor_assigned'
+  | 'seller_invited' // NEW: For inviting sellers to upload documents
+  | 'documents_requested' // NEW: For document requests
   | 'shared'
   | 'viewed'
   | 'commented';
@@ -268,6 +275,13 @@ export interface PropertyValidationRules {
     maxLength: number;
     required: boolean;
   };
+  fileReference: {
+    // NEW: Validation rules for file reference
+    minLength: number;
+    maxLength: number;
+    required: boolean;
+    pattern?: string;
+  };
   description: {
     maxLength: number;
     required: boolean;
@@ -275,6 +289,9 @@ export interface PropertyValidationRules {
   address: {
     required: boolean;
     validatePostcode: boolean;
+  };
+  tenure: {
+    required: boolean;
   };
   askingPrice: {
     min: number;
@@ -314,4 +331,24 @@ export interface PropertyExportData {
   filters?: PropertyFilters;
   exportedAt: Date;
   exportedBy: string;
+}
+
+/**
+ * Document invitation data - NEW: For inviting sellers to upload documents
+ */
+export interface DocumentInvitation {
+  id: string;
+  propertyId: string;
+  invitedBy: string;
+  invitedByUser?: Pick<User, 'id' | 'firstName' | 'lastName'>;
+  recipientEmail: string;
+  recipientName?: string;
+  status: 'pending' | 'sent' | 'viewed' | 'completed' | 'expired';
+  secureToken: string;
+  expiresAt: Date;
+  createdAt: Date;
+  viewedAt?: Date;
+  completedAt?: Date;
+  requiredDocuments: string[]; // List of document types required
+  message?: string; // Optional message from agent to seller
 }

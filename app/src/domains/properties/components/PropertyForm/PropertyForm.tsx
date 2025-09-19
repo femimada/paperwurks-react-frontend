@@ -1,4 +1,4 @@
-// src/features/properties/components/PropertyForm.tsx
+// src/domains/properties/components/PropertyForm/PropertyForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,107 +8,56 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   Button,
-  Textarea,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
   Alert,
   AlertDescription,
-  Badge,
   Separator,
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-  Input,
 } from '@/shared/components/ui';
 import {
-  Home,
   MapPin,
-  Bed,
-  Bath,
-  Square,
-  Calendar,
-  PoundSterling,
-  X,
-  Loader2,
-  AlertCircle,
+  FileText,
+  Home,
   CheckCircle,
-  ArrowLeft,
-  ArrowRight,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
+import { useUkAddressAutocomplete } from '@/shared/hooks';
 import type {
   Property,
   CreatePropertyData,
   UpdatePropertyData,
 } from '@/domains/properties/types';
-import { useUkAddressAutocomplete } from '@/shared/hooks';
 
-// Validation schema for property form
-const PropertyFormSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Property title is required')
-    .max(100, 'Title must be less than 100 characters'),
-  description: z
-    .string()
-    .max(1000, 'Description must be less than 1000 characters')
-    .optional(),
+// Quick-Start form schema with only essential fields
+const propertyFormSchema = z.object({
   address: z.object({
     line1: z.string().min(1, 'Address line 1 is required'),
     line2: z.string().optional(),
     city: z.string().min(1, 'City is required'),
     county: z.string().optional(),
-    postcode: z
-      .string()
-      .min(1, 'Postcode is required')
-      .regex(
-        /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i,
-        'Invalid UK postcode format'
-      ),
+    postcode: z.string().min(1, 'Postcode is required'),
     country: z.string(),
   }),
-  propertyType: z.enum([
-    'detached',
-    'semi_detached',
-    'terraced',
-    'flat',
-    'bungalow',
-  ]),
-  tenure: z.enum(['freehold', 'leasehold', 'commonhold']),
-  bedrooms: z.number().min(0).max(50).optional(),
-  bathrooms: z.number().min(0).max(50).optional(),
-  receptionRooms: z.number().min(0).max(50).optional(),
-  floorArea: z.number().min(0).optional(),
-  plotSize: z.number().min(0).optional(),
-  yearBuilt: z.number().min(1800).max(new Date().getFullYear()).optional(),
-  councilTaxBand: z.string().optional(),
-  energyRating: z.string().optional(),
-  askingPrice: z.number().min(0).optional(),
-  estimatedValue: z.number().min(0).optional(),
-  monthlyServiceCharge: z.number().min(0).optional(),
-  groundRent: z.number().min(0).optional(),
-  leaseYearsRemaining: z.number().min(0).optional(),
-  freeholder: z.string().optional(),
-  managementCompany: z.string().optional(),
-  keyFeatures: z.array(z.string()).optional(),
-  nearbyAmenities: z.array(z.string()).optional(),
-  targetCompletionDate: z.date().optional(),
+  fileReference: z.string().min(1, 'Property file reference is required'),
+  tenure: z.enum(['freehold', 'leasehold'], {
+    error: 'Please select the property tenure',
+  }),
 });
 
-type PropertyFormData = z.infer<typeof PropertyFormSchema>;
+type PropertyFormData = z.infer<typeof propertyFormSchema>;
 
 interface PropertyFormProps {
   property?: Property;
@@ -121,8 +70,8 @@ interface PropertyFormProps {
 }
 
 /**
- * PropertyForm component - Built with shadcn/ui
- * Multi-step form for creating and editing properties
+ * PropertyForm component - Quick-Start single-step form
+ * Agent can create a property file in under 30 seconds
  */
 export const PropertyForm: React.FC<PropertyFormProps> = ({
   property,
@@ -133,71 +82,23 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   className = '',
   testId = 'property-form',
 }) => {
-  const [currentStep, setCurrentStep] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isReferenceManuallyEdited, setIsReferenceManuallyEdited] = useState(
+    // In edit mode, if there's already a fileReference, consider it manually edited
+    mode === 'edit' && (property as any)?.fileReference ? true : false
+  );
 
   const apiKey =
     import.meta.env.VITE_GETADDRESS_API_KEY || 'your_getaddress_api_key_here';
-  const { suggestions, loading, error, fetchPostcodeLookup, clearSuggestions } =
+  const { suggestions, loading, fetchPostcodeLookup, clearSuggestions } =
     useUkAddressAutocomplete(apiKey);
 
-  const steps = [
-    { id: 'basic', title: 'Basic Details', icon: Home },
-    { id: 'address', title: 'Address', icon: MapPin },
-    { id: 'features', title: 'Features', icon: Bed },
-    { id: 'financial', title: 'Financial', icon: PoundSterling },
-  ];
-
-  // Parse default values using the schema to ensure proper typing
-  const looseDefaults = {
-    title: property?.title || '',
-    description: property?.description || '',
-    address: {
-      line1: property?.address?.line1 || '',
-      line2: property?.address?.line2 || '',
-      city: property?.address?.city || '',
-      county: property?.address?.county || '',
-      postcode: property?.address?.postcode || '',
-      country: property?.address?.country || 'UK',
-    },
-    propertyType: property?.propertyType || 'detached',
-    tenure: property?.tenure || 'freehold',
-    bedrooms: property?.bedrooms,
-    bathrooms: property?.bathrooms,
-    receptionRooms: property?.receptionRooms,
-    floorArea: property?.floorArea,
-    plotSize: property?.plotSize,
-    yearBuilt: property?.yearBuilt,
-    councilTaxBand: property?.councilTaxBand,
-    energyRating: property?.energyRating,
-    askingPrice: property?.askingPrice,
-    estimatedValue: property?.estimatedValue,
-    monthlyServiceCharge: property?.monthlyServiceCharge,
-    groundRent: property?.groundRent,
-    leaseYearsRemaining: property?.leaseYearsRemaining,
-    freeholder: property?.freeholder || '',
-    managementCompany: property?.managementCompany || '',
-    keyFeatures: property?.keyFeatures || [],
-    nearbyAmenities: property?.nearbyAmenities || [],
-    targetCompletionDate: property?.targetCompletionDate
-      ? new Date(property.targetCompletionDate)
-      : undefined,
-  };
-
-  const getDefaultValues = (): PropertyFormData => {
-    // Helper function to safely convert strings to numbers
-    const safeNumber = (value: any): number | undefined => {
-      if (value === null || value === undefined || value === '')
-        return undefined;
-      const num = Number(value);
-      return isNaN(num) ? undefined : num;
-    };
-
-    const defaults = {
-      title: property?.title || '',
-      description: property?.description || '',
+  // Form setup with default values
+  const form = useForm<PropertyFormData>({
+    resolver: zodResolver(propertyFormSchema),
+    defaultValues: {
       address: {
         line1: property?.address?.line1 || '',
         line2: property?.address?.line2 || '',
@@ -206,971 +107,400 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         postcode: property?.address?.postcode || '',
         country: property?.address?.country || 'UK',
       },
-      propertyType: (property?.propertyType || 'detached') as any,
-      tenure: (property?.tenure || 'freehold') as any,
-      bedrooms: safeNumber(property?.bedrooms),
-      bathrooms: safeNumber(property?.bathrooms),
-      receptionRooms: safeNumber(property?.receptionRooms),
-      floorArea: safeNumber(property?.floorArea),
-      plotSize: safeNumber(property?.plotSize),
-      yearBuilt: safeNumber(property?.yearBuilt),
-      councilTaxBand: property?.councilTaxBand || '',
-      energyRating: property?.energyRating || '',
-      askingPrice: safeNumber(property?.askingPrice),
-      estimatedValue: safeNumber(property?.estimatedValue),
-      monthlyServiceCharge: safeNumber(property?.monthlyServiceCharge),
-      groundRent: safeNumber(property?.groundRent),
-      leaseYearsRemaining: safeNumber(property?.leaseYearsRemaining),
-      freeholder: property?.freeholder || '',
-      managementCompany: property?.managementCompany || '',
-      keyFeatures: property?.keyFeatures || [],
-      nearbyAmenities: property?.nearbyAmenities || [],
-      targetCompletionDate: property?.targetCompletionDate
-        ? new Date(property.targetCompletionDate)
-        : undefined,
-    };
-
-    return defaults as PropertyFormData;
-  };
-
-  const form = useForm<PropertyFormData>({
-    resolver: zodResolver(PropertyFormSchema),
-    mode: 'onBlur',
-    reValidateMode: 'onBlur',
-    defaultValues: getDefaultValues(),
+      fileReference: (property as any)?.fileReference || '',
+      tenure: property?.tenure || 'freehold',
+    },
   });
 
-  const {
-    handleSubmit,
-    watch,
-    trigger,
+  const { watch, setValue } = form;
+  const watchedAddressLine1 = watch('address.line1');
+  const watchedFileReference = watch('fileReference');
+
+  // Auto-populate file reference when address is selected
+  useEffect(() => {
+    if (watchedAddressLine1 && !isReferenceManuallyEdited) {
+      // Extract a clean reference from address line 1
+      const cleanReference = watchedAddressLine1
+        .replace(/[^\w\s]/g, '') // Remove special characters
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .trim();
+
+      if (cleanReference && cleanReference !== watchedFileReference) {
+        setValue('fileReference', cleanReference);
+      }
+    }
+  }, [
+    watchedAddressLine1,
+    isReferenceManuallyEdited,
     setValue,
-    formState: { isValid },
-  } = form;
-  const watchedTenure = watch('tenure');
-  const watchedPostcode = watch('address.postcode');
+    watchedFileReference,
+  ]);
 
-  // Fetch address suggestions when postcode changes
-  useEffect(() => {
-    if (watchedPostcode && currentStep === 1) {
-      fetchPostcodeLookup(watchedPostcode);
-      setShowSuggestions(true);
+  // Track manual edits to file reference
+  const handleFileReferenceChange = (value: string) => {
+    setIsReferenceManuallyEdited(true);
+    setValue('fileReference', value);
+  };
+
+  const handleFileReferenceBlur = () => {
+    // Mark as manually edited when user focuses away from the field
+    setIsReferenceManuallyEdited(true);
+  };
+
+  const handlePostcodeChange = async (postcode: string) => {
+    setValue('address.postcode', postcode);
+
+    if (postcode.length >= 5) {
+      try {
+        await fetchPostcodeLookup(postcode);
+        setShowSuggestions(true);
+      } catch (err) {
+        console.error('Postcode lookup failed:', err);
+      }
     } else {
-      clearSuggestions();
       setShowSuggestions(false);
+      clearSuggestions();
     }
-  }, [watchedPostcode, fetchPostcodeLookup, clearSuggestions, currentStep]);
+  };
 
-  // Clear success message after 3 seconds
-  useEffect(() => {
-    if (submitSuccess) {
-      const timer = setTimeout(() => setSubmitSuccess(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [submitSuccess]);
+  const handleAddressSelection = (suggestion: any) => {
+    setValue('address.line1', suggestion.line_1 || '');
+    setValue('address.line2', suggestion.line_2 || '');
+    setValue('address.city', suggestion.post_town || '');
+    setValue('address.county', suggestion.county || '');
+    setValue('address.postcode', suggestion.postcode || '');
+    setShowSuggestions(false);
+    clearSuggestions();
+  };
 
-  const handleFormSubmit = async (data: PropertyFormData) => {
+  const handleSubmit = async (data: PropertyFormData) => {
     setSubmitError(null);
-    setSubmitSuccess(false);
 
     try {
-      await onSubmit(data as any);
+      // Convert form data to create/update format
+      const submitData = {
+        ...data,
+        // Add minimal required fields for property creation
+        title: data.fileReference, // Use file reference as title
+        propertyType: 'detached' as const, // Default property type
+      };
+
+      await onSubmit(submitData);
       setSubmitSuccess(true);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to save property';
+    } catch (err: any) {
+      const message = err?.message || 'Failed to save property file';
       setSubmitError(message);
     }
   };
 
-  const nextStep = async () => {
-    const fieldsToValidate = getStepFields(currentStep);
-    const isStepValid = await trigger(fieldsToValidate);
-
-    if (isStepValid && currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const getStepFields = (stepIndex: number): (keyof PropertyFormData)[] => {
-    switch (stepIndex) {
-      case 0:
-        return ['title', 'description', 'propertyType', 'tenure'];
-      case 1:
-        return ['address'];
-      case 2:
-        return [
-          'bedrooms',
-          'bathrooms',
-          'receptionRooms',
-          'floorArea',
-          'plotSize',
-          'yearBuilt',
-          'councilTaxBand',
-          'energyRating',
-        ];
-      case 3:
-        return [
-          'askingPrice',
-          'estimatedValue',
-          'monthlyServiceCharge',
-          'groundRent',
-          'leaseYearsRemaining',
-          'freeholder',
-          'managementCompany',
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const getStepProgress = () => {
-    return Math.round(((currentStep + 1) / steps.length) * 100);
-  };
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return renderBasicDetailsStep();
-      case 1:
-        return renderAddressStep();
-      case 2:
-        return renderFeaturesStep();
-      case 3:
-        return renderFinancialStep();
-      default:
-        return null;
-    }
-  };
-
-  const renderBasicDetailsStep = () => (
-    <div className="space-y-6">
-      <FormField
-        control={form.control}
-        name="title"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Property Title *</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="e.g., Beautiful Victorian House in Central London"
-                {...field}
-                data-testid="title-input"
-              />
-            </FormControl>
-            <FormDescription>
-              Give your property an attractive, descriptive title
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Description</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Describe the property's key features, location benefits, and unique selling points..."
-                rows={4}
-                {...field}
-                data-testid="description-input"
-              />
-            </FormControl>
-            <FormDescription>
-              Optional but recommended - helps attract potential buyers
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="propertyType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Property Type *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="propertyType-select">
-                    <SelectValue placeholder="Select property type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="detached">Detached House</SelectItem>
-                  <SelectItem value="semi_detached">
-                    Semi-Detached House
-                  </SelectItem>
-                  <SelectItem value="terraced">Terraced House</SelectItem>
-                  <SelectItem value="flat">Flat/Apartment</SelectItem>
-                  <SelectItem value="bungalow">Bungalow</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="tenure"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tenure *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="tenure-select">
-                    <SelectValue placeholder="Select tenure" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="freehold">Freehold</SelectItem>
-                  <SelectItem value="leasehold">Leasehold</SelectItem>
-                  <SelectItem value="commonhold">Commonhold</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-    </div>
-  );
-
-  const renderAddressStep = () => (
-    <div className="space-y-6">
-      <FormField
-        control={form.control}
-        name="address.postcode"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Postcode *</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="e.g., SW1A 1AA"
-                {...field}
-                onFocus={() => setShowSuggestions(true)}
-                data-testid="address-postcode-input"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Address Suggestions */}
-      {showSuggestions && (
-        <div className="relative">
-          {loading && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading addresses...</span>
-            </div>
-          )}
-          {error && (
-            <Alert variant="destructive" data-testid="address-error">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {suggestions.length > 0 && (
-            <Command className="absolute z-10 w-full border rounded-md shadow-md bg-background max-h-60 overflow-y-auto">
-              <CommandList>
-                <CommandEmpty>No addresses found.</CommandEmpty>
-                <CommandGroup>
-                  {suggestions.map((suggestion) => (
-                    <CommandItem
-                      key={suggestion.id}
-                      onSelect={() => {
-                        setValue('address.line1', suggestion.line_1 || '');
-                        setValue('address.line2', suggestion.line_2 || '');
-                        setValue('address.city', suggestion.post_town || '');
-                        setValue('address.county', suggestion.county || '');
-                        setValue('address.postcode', suggestion.postcode || '');
-                        setShowSuggestions(false);
-                        clearSuggestions();
-                      }}
-                      className="cursor-pointer"
-                      data-testid={`address-suggestion-${suggestion.id}`}
-                    >
-                      <div>
-                        <strong>{suggestion.line_1}</strong>
-                        {suggestion.line_2 && <>, {suggestion.line_2}</>}
-                        <br />
-                        {suggestion.post_town}, {suggestion.postcode}
-                        {suggestion.county && <>, {suggestion.county}</>}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          )}
-        </div>
-      )}
-
-      <FormField
-        control={form.control}
-        name="address.line1"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address Line 1 *</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="e.g., 123 High Street"
-                {...field}
-                data-testid="address-line1-input"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="address.line2"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address Line 2</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="e.g., Apartment 4B (optional)"
-                {...field}
-                data-testid="address-line2-input"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="address.city"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>City *</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="e.g., London"
-                  {...field}
-                  data-testid="address-city-input"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="address.county"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>County</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="e.g., Greater London"
-                  {...field}
-                  data-testid="address-county-input"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <FormField
-        control={form.control}
-        name="address.country"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Country</FormLabel>
-            <FormControl>
-              <Input {...field} disabled data-testid="address-country-input" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
-
-  const renderFeaturesStep = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <FormField
-          control={form.control}
-          name="bedrooms"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bedrooms</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Bed className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    max="20"
-                    placeholder="0"
-                    className="pl-10"
-                    {...field}
-                    data-testid="bedrooms-input"
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="bathrooms"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bathrooms</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Bath className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    max="10"
-                    placeholder="0"
-                    className="pl-10"
-                    {...field}
-                    data-testid="bathrooms-input"
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="receptionRooms"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reception Rooms</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    max="10"
-                    placeholder="0"
-                    className="pl-10"
-                    {...field}
-                    data-testid="receptionRooms-input"
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="floorArea"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Floor Area (sq ft)</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Square className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="e.g., 1200"
-                    className="pl-10"
-                    {...field}
-                    data-testid="floorArea-input"
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="plotSize"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Plot Size (sq ft)</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Square className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="e.g., 2000"
-                    className="pl-10"
-                    {...field}
-                    data-testid="plotSize-input"
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <FormField
-          control={form.control}
-          name="yearBuilt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Year Built</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min="1800"
-                  max={new Date().getFullYear()}
-                  placeholder="e.g., 1985"
-                  {...field}
-                  data-testid="yearBuilt-input"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="councilTaxBand"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Council Tax Band</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="councilTaxBand-select">
-                    <SelectValue placeholder="Select band" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((band) => (
-                    <SelectItem key={band} value={band}>
-                      Band {band}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="energyRating"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Energy Rating</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="energyRating-select">
-                    <SelectValue placeholder="Select rating" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((rating) => (
-                    <SelectItem key={rating} value={rating}>
-                      {rating} -{' '}
-                      {rating === 'A'
-                        ? 'Most Efficient'
-                        : rating === 'G'
-                          ? 'Least Efficient'
-                          : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-    </div>
-  );
-
-  const renderFinancialStep = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="askingPrice"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Asking Price</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <PoundSterling className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="e.g., 500000"
-                    className="pl-10"
-                    {...field}
-                    data-testid="askingPrice-input"
-                  />
-                </div>
-              </FormControl>
-              <FormDescription>
-                The price you're asking for the property
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="estimatedValue"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Estimated Value</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <PoundSterling className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="e.g., 480000"
-                    className="pl-10"
-                    {...field}
-                    data-testid="estimatedValue-input"
-                  />
-                </div>
-              </FormControl>
-              <FormDescription>
-                Professional valuation or estimate
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      {watchedTenure === 'leasehold' && (
-        <>
-          <Separator />
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Home className="h-5 w-5" />
-              Leasehold Details
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="monthlyServiceCharge"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monthly Service Charge</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <PoundSterling className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="e.g., 200"
-                          className="pl-10"
-                          {...field}
-                          data-testid="monthlyServiceCharge-input"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="groundRent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Annual Ground Rent</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <PoundSterling className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="e.g., 100"
-                          className="pl-10"
-                          {...field}
-                          data-testid="groundRent-input"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="leaseYearsRemaining"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lease Years Remaining</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        min="0"
-                        max="999"
-                        placeholder="e.g., 95"
-                        className="pl-10"
-                        {...field}
-                        data-testid="leaseYearsRemaining-input"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="freeholder"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Freeholder</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., ABC Estates Ltd"
-                        {...field}
-                        data-testid="freeholder-input"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="managementCompany"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Management Company</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Property Management Co"
-                        {...field}
-                        data-testid="managementCompany-input"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+  if (submitSuccess) {
+    return (
+      <Card className={`max-w-2xl mx-auto ${className}`} data-testid={testId}>
+        <CardContent className="pt-6">
+          <div className="text-center space-y-4">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+            <div>
+              <h3 className="text-lg font-semibold text-green-700">
+                Property File Created Successfully!
+              </h3>
+              <p className="text-muted-foreground mt-2">
+                Your property file has been saved. You can now invite the seller
+                to upload documents.
+              </p>
             </div>
           </div>
-        </>
-      )}
-    </div>
-  );
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className={`max-w-4xl mx-auto ${className}`} data-testid={testId}>
-      <Form {...form}>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
-          {/* Success Message */}
-          {submitSuccess && (
-            <Alert
-              className="border-green-200 bg-green-50"
-              data-testid="success-message"
+    <Card className={`max-w-2xl mx-auto ${className}`} data-testid={testId}>
+      <CardHeader className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 rounded-lg">
+            <FileText className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h2
+              className="text-xl font-semibold leading-none tracking-tight"
+              data-slot="card-title"
             >
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                Property {mode === 'create' ? 'created' : 'updated'}{' '}
-                successfully!
-              </AlertDescription>
-            </Alert>
-          )}
+              {mode === 'edit' ? 'Edit Property File' : 'Create Property File'}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Complete in under 30 seconds to start the conveyancing process
+            </p>
+          </div>
+        </div>
 
-          {/* Error Message */}
-          {submitError && (
-            <Alert variant="destructive" data-testid="error-message">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{submitError}</AlertDescription>
-            </Alert>
-          )}
+        <Alert className="border-blue-200 bg-blue-50">
+          <Home className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-700">
+            <strong>Quick-Start:</strong> Enter the property address, add a file
+            reference, and select tenure. That's all you need to begin document
+            collection.
+          </AlertDescription>
+        </Alert>
+      </CardHeader>
 
-          {/* Progress Header */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <CardTitle>
-                    {mode === 'create' ? 'Add New Property' : 'Edit Property'}
-                  </CardTitle>
-                  <CardDescription>
-                    Step {currentStep + 1} of {steps.length}:{' '}
-                    {steps[currentStep].title}
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="text-sm">
-                  {getStepProgress()}% Complete
-                </Badge>
+      <CardContent>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
+            {/* Address Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold">Property Address</h3>
+                <span className="text-red-500">*</span>
               </div>
 
-              <div className="w-full bg-muted rounded-full h-2 mb-6">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${getStepProgress()}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between">
-                {steps.map((step, index) => {
-                  const StepIcon = step.icon;
-                  const isActive = index === currentStep;
-                  const isCompleted = index < currentStep;
-
-                  return (
-                    <div
-                      key={step.id}
-                      className={`flex items-center gap-2 text-sm ${
-                        isActive
-                          ? 'text-primary font-medium'
-                          : isCompleted
-                            ? 'text-green-600'
-                            : 'text-muted-foreground'
-                      }`}
-                    >
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : isCompleted
-                              ? 'bg-green-600 text-white'
-                              : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {isCompleted ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <StepIcon className="h-4 w-4" />
+              {/* Postcode Lookup */}
+              <FormField
+                control={form.control}
+                name="address.postcode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Postcode *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder="e.g., SW1A 1AA"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            handlePostcodeChange(e.target.value);
+                          }}
+                          data-testid="address-postcode-input"
+                        />
+                        {loading && (
+                          <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                         )}
                       </div>
-                      <span className="hidden md:inline">{step.title}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardHeader>
-          </Card>
+                    </FormControl>
+                    <FormDescription>
+                      Enter postcode to search for the property address
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Step Content */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {React.createElement(steps[currentStep].icon, {
-                  className: 'h-5 w-5',
-                })}
-                {steps[currentStep].title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>{renderStepContent()}</CardContent>
-          </Card>
-
-          {/* Navigation Buttons */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  {currentStep > 0 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={prevStep}
-                      data-testid="prev-step-button"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Previous
-                    </Button>
-                  )}
-                  {onCancel && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={onCancel}
-                      data-testid="cancel-button"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                  )}
+              {/* Address Suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <p className="text-sm font-medium mb-2">Select address:</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className="w-full text-left p-2 text-sm hover:bg-white rounded border-0 bg-transparent"
+                        onClick={() => handleAddressSelection(suggestion)}
+                      >
+                        {suggestion.line_1}, {suggestion.post_town},{' '}
+                        {suggestion.postcode}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                <div className="flex gap-2">
-                  {currentStep < steps.length - 1 ? (
-                    <Button
-                      type="button"
-                      onClick={nextStep}
-                      data-testid="next-step-button"
-                    >
-                      Next
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || !isValid}
-                      data-testid="submit-button"
-                    >
-                      {isSubmitting && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      {isSubmitting
-                        ? mode === 'create'
-                          ? 'Creating...'
-                          : 'Updating...'
-                        : mode === 'create'
-                          ? 'Create Property'
-                          : 'Update Property'}
-                    </Button>
+              {/* Manual Address Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="address.line1"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Address Line 1 *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 123 Oak Street"
+                          {...field}
+                          data-testid="address-line1-input"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address.line2"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Address Line 2</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Apartment 4B"
+                          {...field}
+                          data-testid="address-line2-input"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., London"
+                          {...field}
+                          data-testid="address-city-input"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address.county"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>County</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Greater London"
+                          {...field}
+                          data-testid="address-county-input"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-            </CardContent>
-          </Card>
-        </form>
-      </Form>
-    </div>
+            </div>
+
+            <Separator />
+
+            {/* File Reference Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold">Case Reference</h3>
+                <span className="text-red-500">*</span>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="fileReference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Property File Reference *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., 123 Oak Street - Smith Sale"
+                        {...field}
+                        onChange={(e) =>
+                          handleFileReferenceChange(e.target.value)
+                        }
+                        onBlur={handleFileReferenceBlur}
+                        data-testid="file-reference-input"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {isReferenceManuallyEdited
+                        ? 'Custom reference entered'
+                        : 'Auto-populated from address (you can edit this)'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Tenure Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Home className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold">Property Tenure</h3>
+                <span className="text-red-500">*</span>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="tenure"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tenure *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="tenure-select">
+                          <SelectValue placeholder="Select property tenure" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="freehold">Freehold</SelectItem>
+                        <SelectItem value="leasehold">Leasehold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      This determines which legal documents will be required
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Error Display */}
+            {submitError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Form Actions */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1"
+                data-testid="submit-button"
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {mode === 'edit'
+                  ? 'Update Property File'
+                  : 'Create Property File'}
+              </Button>
+
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  disabled={isSubmitting}
+                  data-testid="cancel-button"
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };

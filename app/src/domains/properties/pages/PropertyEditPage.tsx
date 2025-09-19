@@ -1,4 +1,4 @@
-// src/pages/properties/PropertyEditPage.tsx
+// src/domains/properties/pages/PropertyEditPage.tsx
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 
@@ -26,6 +26,8 @@ import {
   Home,
   CheckCircle,
   AlertTriangle,
+  FileText,
+  MapPin,
 } from 'lucide-react';
 import { buildRoute } from '@/shared/constants/routes';
 import type { UpdatePropertyData } from '@/domains/properties/types';
@@ -38,8 +40,8 @@ interface PropertyEditPageProps {
 }
 
 /**
- * PropertyEditPage - Page for editing existing properties
- * Integrates PropertyForm with update logic and navigation
+ * PropertyEditPage - Page for editing property files
+ * Maintains Quick-Start simplicity while allowing essential updates
  */
 export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
   className = '',
@@ -94,10 +96,11 @@ export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
     }
   };
 
-  const handleViewProperty = () => {
-    if (property) {
-      navigate(buildRoute.propertyDetail(property.id));
-    }
+  const getFileReference = () => {
+    return (
+      (property as any)?.fileReference ||
+      `${property?.address?.line1} - ${property?.title || 'Property Sale'}`
+    );
   };
 
   // Loading state
@@ -111,7 +114,7 @@ export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
           <div className="space-y-6">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-4 w-96" />
-            <Card>
+            <Card className="max-w-2xl mx-auto">
               <CardHeader>
                 <Skeleton className="h-6 w-48" />
               </CardHeader>
@@ -140,18 +143,17 @@ export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
           <Card className="max-w-md mx-auto">
             <CardHeader>
               <CardTitle className="text-center text-destructive">
-                Property Not Found
+                Property File Not Found
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-muted-foreground">
-                {propertyError &&
-                typeof propertyError === 'object' &&
-                'message' in propertyError
-                  ? (propertyError as any).message
-                  : "The property you're trying to edit doesn't exist or you don't have permission to edit it."}
+                {propertyError
+                  ? propertyError
+                  : "The property file you're trying to edit doesn't exist or you don't have permission to access it."}
               </p>
-              <Button onClick={() => navigate('/properties')} variant="outline">
+              <Button variant="outline" onClick={() => navigate('/properties')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Properties
               </Button>
             </CardContent>
@@ -176,19 +178,17 @@ export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
+              <AlertTriangle className="h-12 w-12 mx-auto text-destructive" />
               <p className="text-muted-foreground">
-                You don't have permission to edit this property. Only the
-                property owner and assigned agents can make changes.
+                You don't have permission to edit this property file.
               </p>
-              <div className="flex gap-2 justify-center">
-                <Button
-                  onClick={() => navigate('/properties')}
-                  variant="outline"
-                >
-                  Back to Properties
-                </Button>
-                <Button onClick={handleViewProperty}>View Property</Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate(buildRoute.propertyDetail(property.id))}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                View Property File
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -202,32 +202,22 @@ export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
       <PageLayout>
         <div
           className={`container mx-auto px-4 py-8 ${className}`}
-          data-testid={`${testId}-success`}
+          data-testid={testId}
         >
-          <div className="max-w-md mx-auto text-center">
-            <Card className="border-green-200 bg-green-50">
-              <CardContent className="p-8">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-green-900 mb-2">
-                  Property Updated!
-                </h2>
-                <p className="text-green-700 mb-6">
-                  Your changes have been saved successfully.
-                </p>
-                <Button
-                  onClick={handleViewProperty}
-                  className="flex items-center gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  View Property
-                </Button>
-                <p className="text-sm text-green-600 mt-4">
-                  Redirecting to property details in 2 seconds...
-                </p>
-              </CardContent>
-            </Card>
+          <div className="max-w-2xl mx-auto text-center space-y-6">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+            <div>
+              <h1 className="text-2xl font-bold text-green-700 mb-2">
+                Property File Updated Successfully!
+              </h1>
+              <p className="text-muted-foreground mb-4">
+                Your changes have been saved. You'll be redirected to the
+                property dashboard.
+              </p>
+              <div className="text-sm text-muted-foreground">
+                Redirecting in a moment...
+              </div>
+            </div>
           </div>
         </div>
       </PageLayout>
@@ -240,103 +230,97 @@ export const PropertyEditPage: React.FC<PropertyEditPageProps> = ({
         className={`container mx-auto px-4 py-8 ${className}`}
         data-testid={testId}
       >
-        {/* Breadcrumb Navigation */}
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/properties">Properties</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to={buildRoute.propertyDetail(property.id)}>
-                  {property.title}
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
+        <div className="space-y-6">
+          {/* Breadcrumb */}
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/dashboard">
+                    <Home className="h-4 w-4" />
+                    <span className="sr-only">Home</span>
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/properties">Properties</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to={buildRoute.propertyDetail(property.id)}>
+                    Property File
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
               <BreadcrumbPage>Edit</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="flex items-center gap-2"
-              data-testid="back-button"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                Edit Property
-              </h1>
-              <p className="text-muted-foreground">{property.title}</p>
+          {/* Page Header */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Link
+                to={buildRoute.propertyDetail(property.id)}
+                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Back to Property File
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              <Edit className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Edit Property File
+                </h1>
+                <div className="flex items-center gap-2 text-muted-foreground mt-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>
+                    {property.address.line1}, {property.address.city}
+                  </span>
+                  <span>•</span>
+                  <FileText className="h-4 w-4" />
+                  <span>{getFileReference()}</span>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Edit Information */}
+          <Alert className="max-w-2xl mx-auto border-blue-200 bg-blue-50">
+            <FileText className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-700">
+              <strong>Quick Edit:</strong> Update the essential property
+              information. You can modify the address, file reference, or tenure
+              as needed.
+            </AlertDescription>
+          </Alert>
+
+          {/* Property Form */}
+          <PropertyForm
+            property={property}
+            mode="edit"
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            isSubmitting={isPending}
+          />
+
+          {/* Update Error */}
+          {updateError && (
+            <Alert variant="destructive" className="max-w-2xl mx-auto">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to update property file. Please try again or contact
+                support if the problem persists.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
-
-        {/* Information Alert */}
-        <Alert className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Changes to property information will be saved immediately and may
-            affect shared property packs.
-          </AlertDescription>
-        </Alert>
-
-        {/* Error Alert */}
-        {updateError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              {updateError instanceof Error
-                ? updateError.message
-                : 'Failed to update property. Please try again.'}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Property Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Edit className="h-5 w-5" />
-              Property Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PropertyForm
-              property={property}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-              isSubmitting={isPending}
-              mode="edit"
-              testId="edit-property-form"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Warning for shared properties */}
-        {property.status === 'shared' && (
-          <Alert className="mt-6" variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Warning:</strong> This property has been shared with
-              others. Changes you make will be visible to all parties with
-              access to the property pack.
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
     </PageLayout>
   );

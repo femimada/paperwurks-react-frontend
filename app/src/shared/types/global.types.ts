@@ -73,7 +73,7 @@ export type PropertyType =
 /**
  * Property tenure types
  */
-export type PropertyTenure = 'freehold' | 'leasehold' | 'commonhold';
+export type PropertyTenure = 'freehold' | 'leasehold';
 
 /**
  * Document categories
