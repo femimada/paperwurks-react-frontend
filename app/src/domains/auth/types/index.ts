@@ -50,7 +50,3 @@ export type {
   ScopedPermission,
   PermissionMatrix,
 } from './permission.types';
-
-// Re-export renamed types from hooks
-export type { LoginFormData as LoginRequest } from '@/domains/auth/hooks/useLogin';
-export type { RegisterFormData as RegisterRequest } from '@/domains/auth/hooks/useRegister';

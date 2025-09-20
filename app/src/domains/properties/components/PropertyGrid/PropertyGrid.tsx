@@ -10,7 +10,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Badge,
   Skeleton,
 } from '@/shared/components/ui';
 import { PropertyCard } from '../PropertyCard/PropertyCard';
@@ -68,7 +67,6 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
   totalCount,
   pagination,
   stats,
-  filters = {},
   sort = { field: 'updatedAt', direction: 'desc' },
   isLoading = false,
   searchQuery = '',

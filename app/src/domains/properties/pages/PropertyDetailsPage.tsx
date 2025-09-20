@@ -1,9 +1,8 @@
-// src/pages/properties/PropertyDetailsPage.tsx
-import React, { useState } from 'react';
+// src/domains/properties/pages/PropertyDetailsPage.tsx - UPDATED
+import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/domains/auth';
 
-import { PropertyDetails } from '@/domains/properties/components/PropertyDetails';
+import { PropertyFileDashboard } from '@/domains/properties/components/PropertyDetails';
 import { PageLayout } from '@/shared/components/layout/PageLayout';
 import {
   Card,
@@ -11,14 +10,7 @@ import {
   CardHeader,
   CardTitle,
   Button,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Badge,
   Skeleton,
-  Alert,
-  AlertDescription,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -26,30 +18,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/components/ui';
-import {
-  ArrowLeft,
-  Edit,
-  Share,
-  FileText,
-  Activity,
-  Settings,
-  Home,
-  MapPin,
-  Calendar,
-  User,
-  AlertTriangle,
-} from 'lucide-react';
+import { ArrowLeft, Home, AlertTriangle } from 'lucide-react';
 import { buildRoute } from '@/shared/constants/routes';
-import { PROPERTY_STATUSES } from '@/shared/constants/status';
 import { useProperty } from '../hooks/useProperties';
+
 interface PropertyDetailsPageProps {
   className?: string;
   testId?: string;
 }
 
 /**
- * PropertyDetailsPage - Detailed view of a single property
- * Shows property information, documents, and activity
+ * PropertyDetailsPage - Page wrapper for property file dashboard
+ * Handles routing, loading states, and page layout
+ * Contains the PropertyFileDashboard component
  */
 export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
   className = '',
@@ -57,11 +38,33 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch property data
   const { data: property, isLoading, error, refetch } = useProperty(id!);
+
+  // Navigation handlers
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const handleEdit = () => {
+    if (property) {
+      navigate(buildRoute.propertyEdit(property.id));
+    }
+  };
+
+  const handleShare = () => {
+    // TODO: Implement sharing functionality
+    console.log('Share property:', property?.id);
+  };
+
+  const handleInviteSeller = () => {
+    // TODO: Implement seller invitation functionality
+    console.log(
+      'Invite seller to upload documents for property:',
+      property?.id
+    );
+  };
 
   // Loading state
   if (isLoading) {
@@ -72,17 +75,25 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
           data-testid={testId}
         >
           <div className="space-y-6">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-4">
-                <Skeleton className="h-96 w-full" />
-                <Skeleton className="h-48 w-full" />
+            {/* Breadcrumb skeleton */}
+            <Skeleton className="h-4 w-64" />
+
+            {/* Header skeleton */}
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-96" />
+                <Skeleton className="h-4 w-64" />
               </div>
-              <div className="space-y-4">
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-48 w-full" />
+              <div className="flex gap-2">
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-9 w-20" />
               </div>
+            </div>
+
+            {/* Content skeleton */}
+            <div className="space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-96 w-full" />
             </div>
           </div>
         </div>
@@ -100,7 +111,8 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
         >
           <Card className="max-w-md mx-auto">
             <CardHeader>
-              <CardTitle className="text-center text-destructive">
+              <CardTitle className="text-center text-destructive flex items-center justify-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
                 Property Not Found
               </CardTitle>
             </CardHeader>
@@ -111,13 +123,11 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
                   : "The property you're looking for doesn't exist or you don't have permission to view it."}
               </p>
               <div className="flex gap-2 justify-center">
-                <Button
-                  onClick={() => navigate('/properties')}
-                  variant="outline"
-                >
-                  Back to Properties
+                <Button onClick={handleBack} variant="outline">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Go Back
                 </Button>
-                <Button onClick={() => refetch()} variant="default">
+                <Button onClick={() => refetch()} variant="outline">
                   Try Again
                 </Button>
               </div>
@@ -127,53 +137,6 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
       </PageLayout>
     );
   }
-
-  // Permission checks
-  const canEdit =
-    property?.owner &&
-    (user?.id === property.owner.id || user?.role === 'agent');
-  const canShare = canEdit;
-
-  const handleEdit = () => {
-    if (property) {
-      navigate(buildRoute.propertyEdit(property.id));
-    }
-  };
-
-  const handleShare = () => {
-    if (property) {
-      navigate(buildRoute.shareProperty(property.id));
-    }
-  };
-
-  const handleBackToList = () => {
-    navigate('/properties');
-  };
-
-  const getStatusVariant = (status: string) => {
-    const statusConfig =
-      PROPERTY_STATUSES[status as keyof typeof PROPERTY_STATUSES];
-    switch (statusConfig?.color) {
-      case 'success':
-        return 'default';
-      case 'warning':
-        return 'secondary';
-      case 'error':
-        return 'destructive';
-      case 'info':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date(date));
-  };
 
   return (
     <PageLayout>
@@ -186,208 +149,38 @@ export const PropertyDetailsPage: React.FC<PropertyDetailsPageProps> = ({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/properties">Properties</Link>
+                <Link to="/dashboard">
+                  <Home className="h-4 w-4" />
+                </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{property.title}</BreadcrumbPage>
+              <BreadcrumbLink asChild>
+                <Link to="/properties">Properties</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbPage>{property.title}</BreadcrumbPage>
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Header Section */}
-        <div className="flex items-start justify-between mb-8">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBackToList}
-                className="flex items-center gap-2"
-                data-testid="back-button"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              <Badge variant={getStatusVariant(property.status)}>
-                {PROPERTY_STATUSES[
-                  property.status as keyof typeof PROPERTY_STATUSES
-                ]?.label || property.status}
-              </Badge>
-            </div>
-
-            <h1 className="text-3xl font-bold text-foreground mb-2 truncate">
-              {property.title}
-            </h1>
-
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>
-                  {property.address.line1}, {property.address.city}{' '}
-                  {property.address.postcode}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                <span>Created {formatDate(property.createdAt)}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <User className="h-4 w-4" />
-                <span>
-                  {property.owner
-                    ? `${property.owner.firstName} ${property.owner.lastName}`
-                    : 'Owner information unavailable'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 ml-4">
-            {canShare && (
-              <Button
-                variant="outline"
-                onClick={handleShare}
-                className="flex items-center gap-2"
-                data-testid="share-button"
-              >
-                <Share className="h-4 w-4" />
-                Share
-              </Button>
-            )}
-            {canEdit && (
-              <Button
-                onClick={handleEdit}
-                className="flex items-center gap-2"
-                data-testid="edit-button"
-              >
-                <Edit className="h-4 w-4" />
-                Edit
-              </Button>
-            )}
-          </div>
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button variant="ghost" onClick={handleBack} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Properties
+          </Button>
         </div>
 
-        {/* Warning for incomplete properties */}
-        {property.status === 'draft' && (
-          <Alert className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              This property is in draft status. Complete the property
-              information and upload required documents to make it ready for
-              sharing.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Main Content - Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Home className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Documents
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Activity
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className="flex items-center gap-2"
-              disabled={!canEdit}
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="mt-6">
-            <PropertyDetails
-              property={property}
-              onEdit={canEdit ? (_prop) => handleEdit() : undefined}
-              onShare={canShare ? (_prop) => handleShare() : undefined}
-              testId="property-details-overview"
-            />
-          </TabsContent>
-
-          {/* Documents Tab - Placeholder for Stage 4 */}
-          <TabsContent value="documents" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Property Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">
-                    Document Management Coming Soon
-                  </p>
-                  <p>
-                    Upload and manage property documents in the next release.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Activity Tab - Placeholder for Stage 5 */}
-          <TabsContent value="activity" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Property Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">
-                    Activity Timeline Coming Soon
-                  </p>
-                  <p>
-                    Track property changes and user interactions in the next
-                    release.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Property Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">
-                    Advanced Settings Coming Soon
-                  </p>
-                  <p>
-                    Configure sharing permissions and advanced property settings
-                    in the next release.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Property File Dashboard */}
+        <PropertyFileDashboard
+          property={property}
+          onEdit={handleEdit}
+          onShare={handleShare}
+          onInviteSeller={handleInviteSeller}
+          testId="property-file-dashboard"
+        />
       </div>
     </PageLayout>
   );

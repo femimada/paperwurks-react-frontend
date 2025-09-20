@@ -20,7 +20,6 @@ import type {
   CreatePropertyData,
   UpdatePropertyData,
 } from '@/domains/properties/types';
-import { useAuth } from '@/domains/auth';
 import { usePropertyCreate } from '@/domains/properties/hooks';
 
 interface PropertyCreatePageProps {
@@ -37,15 +36,10 @@ export const PropertyCreatePage: React.FC<PropertyCreatePageProps> = ({
   testId = 'property-create-page',
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Property creation mutation
-  const {
-    mutateAsync: createProperty,
-    isPending,
-    error: createError,
-  } = usePropertyCreate();
+  const { mutateAsync: createProperty, isPending } = usePropertyCreate();
 
   // Handle form submission
   const handleSubmit = async (

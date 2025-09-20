@@ -9,10 +9,11 @@ import {
 
 import { TokenService } from '@/domains/auth/services/tokenService';
 import { logger } from '@/shared/utils/logger';
-import type { User, AuthResponse, RegisterRequest } from '@/domains/auth/types';
-import type { LoginFormData as LoginRequest } from '@/domains/auth/components';
+import type { User, AuthResponse } from '@/domains/auth/types';
+import type { LoginFormData as LoginRequest } from '@/domains/auth/utils/validation/authSchema';
 import type { Permission } from '@/shared/types/global.types';
 import { authService } from '@/domains/auth';
+import type { RegisterFormData as RegisterRequest } from '@/domains/auth/utils/validation/authSchema';
 
 // Enhanced types for better safety
 type AuthErrorPayload = { message: string; code?: string };

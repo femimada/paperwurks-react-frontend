@@ -2,10 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PropertyGrid } from '@/domains/properties/components/PropertyGrid';
-import type {
-  PropertyListItem,
-  PropertyFilters,
-} from '@/domains/properties/types';
+import type { PropertyListItem } from '@/domains/properties/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock property data with fileReference field

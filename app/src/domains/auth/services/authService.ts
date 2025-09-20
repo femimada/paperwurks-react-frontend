@@ -3,8 +3,6 @@ import { logger } from '@/shared/utils/logger';
 import { TokenService } from './tokenService';
 import { apiClient } from '@/services/api';
 import type {
-  LoginRequest,
-  RegisterRequest,
   AuthResponse,
   ForgotPasswordRequest,
   ResetPasswordRequest,
@@ -12,6 +10,8 @@ import type {
 } from '@/domains/auth/types';
 import type { ApiResponse } from '@/shared/types/api/common.types';
 import type { RefreshTokenRequest, User } from '@/domains/auth/types';
+import type { LoginFormData as LoginRequest } from '@/domains/auth/utils/validation/authSchema';
+import type { RegisterFormData as RegisterRequest } from '@/domains/auth/utils/validation/authSchema';
 
 export class AuthService {
   /**

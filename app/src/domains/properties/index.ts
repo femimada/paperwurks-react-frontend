@@ -3,7 +3,7 @@
 export { PropertyGrid } from './components/PropertyGrid';
 export { PropertyForm } from './components/PropertyForm';
 export { PropertyCard } from './components/PropertyCard';
-export { PropertyDetails } from './components/PropertyDetails';
+export { PropertyFileDashboard } from './components/PropertyDetails';
 export { PropertySummary } from './components/PropertySummary'; // NEW: Simplified property display
 
 // Hooks

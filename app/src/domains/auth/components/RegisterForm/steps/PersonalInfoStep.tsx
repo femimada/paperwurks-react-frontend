@@ -8,7 +8,7 @@ import type {
   FieldErrors,
   UseFormWatch,
 } from 'react-hook-form';
-import type { RegisterFormData } from '@/domains/auth/hooks/useRegister';
+import type { RegisterFormData } from '@/domains/auth/utils/validation/authSchema';
 
 interface PersonalInfoStepProps {
   register: UseFormRegister<RegisterFormData>;
