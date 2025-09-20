@@ -16,7 +16,7 @@ import type {
   UseFormWatch,
   UseFormSetValue,
 } from 'react-hook-form';
-import type { RegisterFormData } from '@/domains/auth/hooks/useRegister';
+import type { RegisterFormData } from '@/domains/auth/utils/validation/authSchema';
 import type { UserRole } from '@/shared/types/global.types';
 import type { Organization } from '@/domains/auth/types';
 

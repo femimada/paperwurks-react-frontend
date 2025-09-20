@@ -1,12 +1,13 @@
 // src/mocks/handlers/auth.ts
 import { http, HttpResponse } from 'msw';
 import type {
-  LoginRequest,
-  RegisterRequest,
   AuthResponse,
   RefreshTokenRequest,
   User,
 } from '@/domains/auth/types';
+
+import type { LoginFormData as LoginRequest } from '@/domains/auth/utils/validation/authSchema';
+import type { RegisterFormData as RegisterRequest } from '@/domains/auth/utils/validation/authSchema';
 
 // Mock user database - exactly matching the User interface
 const mockUsers: User[] = [

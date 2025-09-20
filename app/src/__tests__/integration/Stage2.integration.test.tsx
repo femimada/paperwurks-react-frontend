@@ -1,7 +1,6 @@
 // src/__tests__/integration/Stage2.integration.test.tsx - Fixed version
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 
@@ -35,11 +34,6 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   </BrowserRouter>
 );
 
-// Mock component for testing
-const MockAuthenticatedComponent = () => {
-  return <div data-testid="authenticated-content">Protected Content</div>;
-};
-
 describe('Stage 2: Complete Authentication System Integration Test', () => {
   const mockAuthService = authService as any;
   const mockTokenService = TokenService as any;
@@ -57,8 +51,6 @@ describe('Stage 2: Complete Authentication System Integration Test', () => {
 
   describe('1. Complete Authentication System', () => {
     it('should handle full authentication lifecycle: login, protected route access, and logout', async () => {
-      const user = userEvent.setup();
-
       // Mock successful login
       mockAuthService.login.mockResolvedValue({
         user: {

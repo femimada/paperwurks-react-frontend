@@ -1,3 +1,5 @@
+import { roleValues } from '@/shared/constants';
+import type { UserRole } from '@/shared/types/global.types';
 import { z } from 'zod';
 
 /**
@@ -30,12 +32,13 @@ export const RegisterPasswordSchema = z
 export const LoginSchema = z.object({
   email: EmailSchema,
   password: LoginPasswordSchema,
-  rememberMe: z.boolean().optional().default(false),
+  rememberMe: z.boolean().optional(),
 });
 
-// Registration schema - strict for security
+// Full validation schema - single source of truth for form data
 export const RegisterSchema = z
   .object({
+    // Personal Info
     firstName: z
       .string()
       .min(1, 'First name is required')
@@ -45,6 +48,7 @@ export const RegisterSchema = z
         /^[a-zA-Z\s'-]+$/,
         'First name can only contain letters, spaces, hyphens, and apostrophes'
       ),
+
     lastName: z
       .string()
       .min(1, 'Last name is required')
@@ -54,21 +58,58 @@ export const RegisterSchema = z
         /^[a-zA-Z\s'-]+$/,
         'Last name can only contain letters, spaces, hyphens, and apostrophes'
       ),
-    email: EmailSchema,
-    password: RegisterPasswordSchema,
+
+    email: z
+      .string()
+      .min(1, 'Email is required')
+      .email('Please enter a valid email address')
+      .toLowerCase()
+      .trim(),
+
+    password: z
+      .string()
+      .min(1, 'Password is required')
+      .min(8, 'Password must be at least 8 characters')
+      .max(128, 'Password must be less than 128 characters')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        'Password must contain uppercase, lowercase, and number'
+      ),
+
     confirmPassword: z.string().min(1, 'Please confirm your password'),
+
+    role: z.enum(roleValues as [UserRole, ...UserRole[]]),
+
+    organizationName: z.string().optional(),
+
+    organizationType: z
+      .enum(['estate_agency', 'law_firm', 'property_company'])
+      .optional(),
+
     acceptsTerms: z
       .boolean()
       .refine(
         (val) => val === true,
         'You must accept the terms and conditions'
       ),
-    acceptsMarketing: z.boolean().optional().default(false),
+
+    acceptsMarketing: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword'],
-  });
+  })
+  .refine(
+    (data) => {
+      const requiresOrg = ['agent', 'solicitor'].includes(data.role);
+      if (!requiresOrg) return true;
+      return !!(data.organizationName?.trim() && data.organizationType);
+    },
+    {
+      message: 'Organization details are required for this role',
+      path: ['organizationName'],
+    }
+  );
 
 // Forgot password schema
 export const ForgotPasswordSchema = z.object({

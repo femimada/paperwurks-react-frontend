@@ -2,8 +2,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { AuthProvider, useAuth } from '../AuthContext';
-import { authService, TokenService } from '@/domains/auth';
+import { AuthProvider } from '../AuthContext';
+import { authService, TokenService, useAuth } from '@/domains/auth';
 import type { User } from '@/domains/auth/types';
 
 // Mock the auth service

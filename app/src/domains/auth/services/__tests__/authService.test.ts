@@ -33,7 +33,9 @@ vi.mock('@/shared/utils/logger', () => ({
 import { TokenService } from '../tokenService';
 import { apiClient } from '@/services/api';
 import { logger } from '@/shared/utils/logger';
-import type { LoginRequest, RegisterRequest } from '@/domains/auth/types';
+import type { LoginFormData as LoginRequest } from '@/domains/auth/utils/validation/authSchema';
+import type { RegisterFormData as RegisterRequest } from '@/domains/auth/utils/validation/authSchema';
+
 import { authService } from '../authService';
 
 import type {
@@ -159,9 +161,9 @@ describe('AuthService', () => {
         confirmPassword: 'password123',
         firstName: 'New',
         lastName: 'User',
-        role: 'owner',
         acceptsTerms: true,
         acceptsMarketing: false,
+        role: 'owner',
       };
 
       const mockResponse = {
@@ -210,9 +212,9 @@ describe('AuthService', () => {
         confirmPassword: 'password123',
         firstName: 'Duplicate',
         lastName: 'User',
-        role: 'owner',
         acceptsTerms: true,
         acceptsMarketing: false,
+        role: 'owner',
       };
 
       const mockError = {

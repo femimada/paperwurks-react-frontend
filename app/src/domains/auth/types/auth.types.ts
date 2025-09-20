@@ -1,6 +1,6 @@
 // src/types/auth/auth.types.ts
 import type { UserRole, Permission } from '@/shared/types/global.types';
-import type { LoginRequest } from '@/domains/auth/types';
+import type { LoginFormData as LoginRequest } from '@/domains/auth/utils/validation/authSchema';
 
 /**
  * User profile information

@@ -29,6 +29,8 @@ export const USER_ROLES: Record<
   },
 } as const;
 
+// Derive role values from USER_ROLES (single source of truth)
+export const roleValues = Object.keys(USER_ROLES) as UserRole[];
 /**
  * Role-based permissions mapping
  */

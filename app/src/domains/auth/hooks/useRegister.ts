@@ -2,105 +2,20 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/hooks';
 import { logger } from '@/shared/utils/logger';
-import { USER_ROLES } from '@/shared/constants/roles';
+import { USER_ROLES, roleValues } from '@/shared/constants/roles';
 import type { UserRole } from '@/shared/types/global.types';
 import type { UseFormReturn } from 'react-hook-form';
+import {
+  type RegisterFormData,
+  RegisterSchema,
+} from '@/domains/auth/utils/validation/authSchema';
 
 // ============== Types ==============
-
 export type RegistrationStep = 'personal' | 'role' | 'terms';
-
-// ============== Constants ==============
-
 const STEPS: RegistrationStep[] = ['personal', 'role', 'terms'];
-
-// Derive role values from USER_ROLES (single source of truth)
-const roleValues = Object.keys(USER_ROLES) as UserRole[];
-
-// ============== Schemas ==============
-
-// Full validation schema - single source of truth for form data
-const RegisterSchema = z
-  .object({
-    // Personal Info
-    firstName: z
-      .string()
-      .min(1, 'First name is required')
-      .min(2, 'First name must be at least 2 characters')
-      .max(50, 'First name must be less than 50 characters')
-      .regex(
-        /^[a-zA-Z\s'-]+$/,
-        'First name can only contain letters, spaces, hyphens, and apostrophes'
-      ),
-
-    lastName: z
-      .string()
-      .min(1, 'Last name is required')
-      .min(2, 'Last name must be at least 2 characters')
-      .max(50, 'Last name must be less than 50 characters')
-      .regex(
-        /^[a-zA-Z\s'-]+$/,
-        'Last name can only contain letters, spaces, hyphens, and apostrophes'
-      ),
-
-    email: z
-      .string()
-      .min(1, 'Email is required')
-      .email('Please enter a valid email address')
-      .toLowerCase()
-      .trim(),
-
-    password: z
-      .string()
-      .min(1, 'Password is required')
-      .min(8, 'Password must be at least 8 characters')
-      .max(128, 'Password must be less than 128 characters')
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Password must contain uppercase, lowercase, and number'
-      ),
-
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
-
-    role: z.enum(roleValues as [UserRole, ...UserRole[]]),
-
-    organizationName: z.string().optional(),
-
-    organizationType: z
-      .enum(['estate_agency', 'law_firm', 'property_company'])
-      .optional(),
-
-    acceptsTerms: z
-      .boolean()
-      .refine(
-        (val) => val === true,
-        'You must accept the terms and conditions'
-      ),
-
-    acceptsMarketing: z.boolean(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  })
-  .refine(
-    (data) => {
-      const requiresOrg = ['agent', 'solicitor'].includes(data.role);
-      if (!requiresOrg) return true;
-      return !!(data.organizationName?.trim() && data.organizationType);
-    },
-    {
-      message: 'Organization details are required for this role',
-      path: ['organizationName'],
-    }
-  );
-
-// Infer form data type from schema
-export type RegisterFormData = z.infer<typeof RegisterSchema>;
 
 // Step-specific schemas for validation
 const PersonalInfoSchema = RegisterSchema.pick({

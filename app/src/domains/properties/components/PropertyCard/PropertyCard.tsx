@@ -14,13 +14,8 @@ import {
   Bed,
   Bath,
   Home,
-  Calendar,
-  User,
   TrendingUp,
   MoreHorizontal,
-  Eye,
-  Edit,
-  Share,
 } from 'lucide-react';
 import type { PropertyListItem } from '@/domains/properties/types';
 import { PROPERTY_STATUSES } from '@/shared/constants/status';

@@ -1,24 +1,14 @@
 // src/domains/auth/hooks/useLogin.ts
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
 import { useAuth } from '@/domains/auth/hooks';
 import { logger } from '@/shared/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-// Minimal login validation - only check for required fields and basic format
-export const LoginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address')
-    .trim(),
-  password: z.string().min(1, 'Password is required'), // No length requirement - let server validate
-  rememberMe: z.boolean().optional().default(false),
-});
-
-export type LoginFormData = z.input<typeof LoginSchema>;
+import {
+  LoginSchema,
+  type LoginFormData,
+} from '@/domains/auth/utils/validation/authSchema';
 
 export interface UseLoginReturn {
   onSubmit: (data: LoginFormData) => Promise<void>;

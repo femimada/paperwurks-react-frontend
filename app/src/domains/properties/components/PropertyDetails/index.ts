@@ -1,1 +1,1 @@
-export { PropertyDetails } from './PropertyDetails';
+export { PropertyFileDashboard } from './PropertyDetails';
