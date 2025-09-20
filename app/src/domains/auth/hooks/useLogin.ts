@@ -1,4 +1,4 @@
-// src/features/auth/hooks/useLogin.ts
+// src/domains/auth/hooks/useLogin.ts
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
@@ -7,21 +7,14 @@ import { logger } from '@/shared/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+// Minimal login validation - only check for required fields and basic format
 export const LoginSchema = z.object({
   email: z
-    .email('Please enter a valid email address')
-    .trim()
-    .min(1, 'Email is required'),
-  password: z
     .string()
-    .trim()
-    .min(1, 'Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Password must include uppercase, lowercase, and number'
-    ),
-
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address')
+    .trim(),
+  password: z.string().min(1, 'Password is required'), // No length requirement - let server validate
   rememberMe: z.boolean().optional().default(false),
 });
 
@@ -36,7 +29,8 @@ export interface UseLoginReturn {
 /**
  * Custom hook for login authentication logic
  *
- * Handles authentication and navigation logic
+ * Handles authentication and navigation logic with simplified validation
+ * for better user experience - complex password rules only apply during registration
  *
  * @returns {UseLoginReturn} Submission handler and state
  */
@@ -45,9 +39,16 @@ export const useLogin = (): UseLoginReturn => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
-    mode: 'onChange',
+    mode: 'onBlur', // Changed from onChange to reduce aggressive validation
+    reValidateMode: 'onChange',
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
   });
 
   const from = useMemo(
@@ -66,6 +67,7 @@ export const useLogin = (): UseLoginReturn => {
         const sanitizedEmail = data.email.replace(/@.*/, '@[redacted]');
         logger.debug('Login attempt started', { email: sanitizedEmail });
         const rememberMe = data.rememberMe ?? false;
+
         // Clear any previous errors before submission
         clearError();
 

@@ -1,4 +1,4 @@
-// src/features/properties/components/PropertyGrid.tsx (Built with shadcn/ui)
+// src/domains/properties/components/PropertyGrid/PropertyGrid.tsx - Fixed Component
 import React, { useState } from 'react';
 import {
   Card,
@@ -116,7 +116,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
       }`}
     >
       {Array.from({ length: 6 }, (_, index) => (
-        <Card key={index}>
+        <Card key={index} data-testid={`skeleton-card-${index}`}>
           <CardContent className="p-4">
             <Skeleton className="h-4 w-2/3 mb-2" />
             <Skeleton className="h-3 w-1/2 mb-3" />
@@ -154,6 +154,19 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
 
             {/* Sort and View Controls */}
             <div className="flex items-center gap-2">
+              {/* Filters Toggle */}
+              {showFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                  data-testid="filter-toggle"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              )}
+
               {/* Sort */}
               <Select
                 value={`${sort.field}-${sort.direction}`}
@@ -172,34 +185,13 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                   <SelectItem value="title-asc">Title A-Z</SelectItem>
                   <SelectItem value="title-desc">Title Z-A</SelectItem>
                   <SelectItem value="askingPrice-desc">
-                    Price High-Low
+                    Price High to Low
                   </SelectItem>
                   <SelectItem value="askingPrice-asc">
-                    Price Low-High
-                  </SelectItem>
-                  <SelectItem value="completionPercentage-desc">
-                    Most Complete
+                    Price Low to High
                   </SelectItem>
                 </SelectContent>
               </Select>
-
-              {/* Filters Toggle */}
-              {showFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                  data-testid="filters-toggle"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                  {Object.keys(filters).length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {Object.keys(filters).length}
-                    </Badge>
-                  )}
-                </Button>
-              )}
 
               {/* View Mode Toggle */}
               <div className="flex border rounded-md">
@@ -208,7 +200,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                   size="sm"
                   onClick={() => onViewModeChange?.('grid')}
                   className="rounded-r-none border-r"
-                  data-testid="grid-view"
+                  data-testid="grid-view-button"
                 >
                   <Grid3x3 className="h-4 w-4" />
                 </Button>
@@ -217,7 +209,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                   size="sm"
                   onClick={() => onViewModeChange?.('list')}
                   className="rounded-l-none"
-                  data-testid="list-view"
+                  data-testid="list-view-button"
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -227,7 +219,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
               {showCreateButton && onCreateProperty && (
                 <Button
                   onClick={onCreateProperty}
-                  data-testid="create-property"
+                  data-testid="create-property-button"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Property
@@ -271,18 +263,21 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {stats.byStatus.shared || 0}
+                  {stats.byStatus.completed || 0}
                 </div>
-                <div className="text-sm text-muted-foreground">Shared</div>
+                <div className="text-sm text-muted-foreground">Completed</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-foreground">
-                  {new Intl.NumberFormat('en-GB', {
-                    style: 'currency',
-                    currency: 'GBP',
-                    notation: 'compact',
-                    maximumFractionDigits: 1,
-                  }).format(stats.averageValue)}
+                  {/* BUG FIX: Handle cases where averageValue might be 0 or undefined */}
+                  {stats.averageValue
+                    ? new Intl.NumberFormat('en-GB', {
+                        style: 'currency',
+                        currency: 'GBP',
+                        notation: 'compact',
+                        maximumFractionDigits: 1,
+                      }).format(stats.averageValue)
+                    : '£0'}
                 </div>
                 <div className="text-sm text-muted-foreground">Avg. Value</div>
               </div>
@@ -294,14 +289,19 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-          {Math.min(pagination.page * pagination.limit, totalCount)} of{' '}
-          {totalCount} properties
+          {/* BUG FIX: Handle edge cases where pagination might be 0 */}
+          Showing{' '}
+          {totalCount > 0
+            ? (pagination.page - 1) * pagination.limit + 1
+            : 0} to {Math.min(pagination.page * pagination.limit, totalCount)}{' '}
+          of {totalCount} properties
         </div>
 
         {/* Pagination Info */}
         <div className="text-sm text-muted-foreground">
-          Page {pagination.page} of {pagination.totalPages}
+          {/* BUG FIX: Handle case where totalPages might be 0 */}
+          Page {pagination.totalPages > 0 ? pagination.page : 0} of{' '}
+          {pagination.totalPages}
         </div>
       </div>
 
@@ -322,7 +322,10 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                   : 'No properties have been created yet. Add your first property to get started.'}
               </p>
               {showCreateButton && onCreateProperty && !searchQuery && (
-                <Button onClick={onCreateProperty}>
+                <Button
+                  onClick={onCreateProperty}
+                  data-testid="create-property-button"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Your First Property
                 </Button>
@@ -337,6 +340,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
               : 'grid-cols-1'
           }`}
+          data-testid="properties-grid"
         >
           {properties.map((property) => (
             <PropertyCard
@@ -346,7 +350,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
               onEdit={onPropertyEdit}
               onShare={onPropertyShare}
               variant={viewMode === 'list' ? 'compact' : 'default'}
-              data-testid={`property-${property.id}`}
+              testId="property-card"
             />
           ))}
         </div>
@@ -362,7 +366,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                 size="sm"
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={!pagination.hasPrev}
-                data-testid="prev-page"
+                data-testid="prev-page-button"
               >
                 Previous
               </Button>
@@ -383,7 +387,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                         }
                         size="sm"
                         onClick={() => handlePageChange(pageNum)}
-                        data-testid={`page-${pageNum}`}
+                        data-testid={`page-${pageNum}-button`}
                       >
                         {pageNum}
                       </Button>
@@ -397,7 +401,7 @@ export const PropertyGrid: React.FC<PropertyGridProps> = ({
                 size="sm"
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={!pagination.hasNext}
-                data-testid="next-page"
+                data-testid="next-page-button"
               >
                 Next
               </Button>

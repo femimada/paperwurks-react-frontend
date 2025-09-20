@@ -57,7 +57,7 @@ export interface User {
   role: UserRole;
   organization?: Organization;
   permissions: Permission[];
-  profile: UserProfile;
+  profile?: UserProfile;
   isEmailVerified: boolean;
   lastLoginAt?: Date;
   createdAt: Date;
