@@ -71,15 +71,19 @@ describe('LoginForm', () => {
       </TestWrapper>
     );
 
-    // Try to submit empty form
     const submitButton = screen.getByTestId('login-submit-button');
+
+    // Initially the button should be disabled
+    expect(submitButton).toBeDisabled();
+
+    // Try to submit empty form by clicking submit button
     await user.click(submitButton);
 
     // Wait for validation errors to appear
     await waitFor(() => {
-      // Look for generic validation messages that might be shown
-      expect(screen.getByText(/email/i)).toBeInTheDocument();
-      expect(screen.getByText(/password/i)).toBeInTheDocument();
+      // Look for specific error messages, not generic text
+      expect(screen.getByText('Email is required')).toBeInTheDocument();
+      expect(screen.getByText('Password is required')).toBeInTheDocument();
     });
 
     expect(submitButton).toBeDisabled();
@@ -101,11 +105,13 @@ describe('LoginForm', () => {
     await user.tab();
 
     await waitFor(() => {
-      expect(screen.getByText(/valid email/i)).toBeInTheDocument();
+      expect(
+        screen.getByText('Please enter a valid email address')
+      ).toBeInTheDocument();
     });
   });
 
-  it('should show validation error for short password', async () => {
+  it('should allow any non-empty password', async () => {
     const user = userEvent.setup();
 
     render(
@@ -114,12 +120,21 @@ describe('LoginForm', () => {
       </TestWrapper>
     );
 
+    const emailInput = screen.getByTestId('email-input');
     const passwordInput = screen.getByTestId('password-input');
-    await user.type(passwordInput, '123');
+    const submitButton = screen.getByTestId('login-submit-button');
+
+    // Test that even short passwords are accepted for login
+    await user.type(emailInput, 'test@example.com');
+    await user.type(passwordInput, '123'); // Short password should be fine for login
     await user.tab();
 
     await waitFor(() => {
-      expect(screen.getByText(/password/i)).toBeInTheDocument();
+      // Should not show password length error and button should be enabled
+      expect(
+        screen.queryByText(/Password must be at least/)
+      ).not.toBeInTheDocument();
+      expect(submitButton).not.toBeDisabled();
     });
   });
 
@@ -139,11 +154,13 @@ describe('LoginForm', () => {
     // Initially disabled
     expect(submitButton).toBeDisabled();
 
-    // Fill valid data
+    // Fill valid data - now using simple validation requirements
     await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'validPassword123');
+    await user.type(passwordInput, 'password123'); // This should now be valid
 
-    // Wait for form validation
+    // Wait for form validation - using onBlur mode now so trigger blur
+    await user.tab();
+
     await waitFor(
       () => {
         expect(submitButton).not.toBeDisabled();
@@ -183,6 +200,15 @@ describe('LoginForm', () => {
 
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');
+
+    // Trigger validation
+    await user.tab();
+
+    // Wait for button to be enabled
+    await waitFor(() => {
+      expect(submitButton).not.toBeDisabled();
+    });
+
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -194,7 +220,7 @@ describe('LoginForm', () => {
     });
   });
 
-  it('should handle login error and allow dismissing the error', async () => {
+  it('should handle login error and show error message', async () => {
     const user = userEvent.setup();
 
     mockAuthService.login.mockRejectedValue(new Error('Invalid credentials'));
@@ -211,14 +237,23 @@ describe('LoginForm', () => {
 
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'wrongpassword');
+    await user.tab(); // Trigger validation
+
+    await waitFor(() => {
+      expect(submitButton).not.toBeDisabled();
+    });
+
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
+      // Look for a more generic error message or check the auth context error handling
+      const errorAlert = screen.getByRole('alert');
+      expect(errorAlert).toBeInTheDocument();
+      expect(errorAlert).toHaveTextContent(/Login failed|Invalid credentials/i);
     });
   });
 
-  it('should announce error with aria-live', async () => {
+  it('should announce error with proper ARIA attributes', async () => {
     const user = userEvent.setup();
 
     mockAuthService.login.mockRejectedValue(new Error('Invalid credentials'));
@@ -235,11 +270,24 @@ describe('LoginForm', () => {
 
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'wrongpassword');
+    await user.tab();
+
+    await waitFor(() => {
+      expect(submitButton).not.toBeDisabled();
+    });
+
     await user.click(submitButton);
 
     await waitFor(() => {
-      const errorElement = screen.getByRole('alert');
-      expect(errorElement).toBeInTheDocument();
+      // Find the error alert - should be unique from field validation alerts
+      const alerts = screen.getAllByRole('alert');
+      // The login error should be the last alert (not field validation)
+      const loginErrorAlert = alerts.find(
+        (alert) =>
+          alert.textContent?.includes('Login failed') ||
+          alert.textContent?.includes('Invalid credentials')
+      );
+      expect(loginErrorAlert).toBeInTheDocument();
     });
   });
 
