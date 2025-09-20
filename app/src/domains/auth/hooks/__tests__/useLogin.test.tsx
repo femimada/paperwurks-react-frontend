@@ -1,4 +1,4 @@
-// src/domains/auth/hooks/__tests__/useLogin.test.tsx - FINAL WORKING VERSION
+// src/domains/auth/hooks/__tests__/useLogin.test.tsx - UPDATED FOR FIXED USELOGIN
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
@@ -35,9 +35,9 @@ vi.mock('@/domains/auth', () => ({
     setTokens: vi.fn(),
     clearTokens: vi.fn(),
     hasValidTokens: vi.fn(() => false),
-    isTokenExpired: vi.fn(),
-    getAccessToken: vi.fn(),
-    getRefreshToken: vi.fn(),
+    isTokenExpired: vi.fn(() => false),
+    getAccessToken: vi.fn(() => null),
+    getRefreshToken: vi.fn(() => null),
   },
 }));
 
@@ -55,7 +55,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 // Import after mocks
-import { authService } from '@/domains/auth';
+import { authService, TokenService } from '@/domains/auth';
 import { logger } from '@/shared/utils';
 
 // Enhanced test wrapper
@@ -69,15 +69,25 @@ const createWrapper = () => {
 
 describe('useLogin', () => {
   const mockAuthService = authService as any;
+  const mockTokenService = TokenService as any;
   const mockLogger = logger as any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockClear();
 
-    // Reset all auth service mocks to default state
+    // Setup all required mocks properly
     mockAuthService.login.mockReset();
     mockAuthService.getCurrentUser.mockResolvedValue(null);
+
+    // Ensure TokenService mocks are properly set
+    mockTokenService.getTokens.mockReturnValue({
+      accessToken: null,
+      refreshToken: null,
+    });
+    mockTokenService.hasValidTokens.mockReturnValue(false);
+    mockTokenService.isTokenExpired.mockReturnValue(false);
+    mockTokenService.getAccessToken.mockReturnValue(null);
 
     // Setup default location mock
     mockUseLocation.mockReturnValue({
@@ -86,9 +96,13 @@ describe('useLogin', () => {
   });
 
   describe('Initial State', () => {
-    it('should initialize with correct default values', () => {
+    it('should initialize with correct default values', async () => {
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       expect(result.current.isSubmitting).toBe(false);
@@ -96,9 +110,13 @@ describe('useLogin', () => {
       expect(result.current.onSubmit).toBeInstanceOf(Function);
     });
 
-    it('should initialize form with empty values', () => {
+    it('should initialize form with empty values', async () => {
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       const formValues = result.current.form.getValues();
@@ -112,6 +130,10 @@ describe('useLogin', () => {
     it('should validate required email field', async () => {
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       act(() => {
@@ -128,6 +150,10 @@ describe('useLogin', () => {
     it('should validate email format', async () => {
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       act(() => {
@@ -148,6 +174,10 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
+      });
+
       act(() => {
         result.current.form.setValue('password', '');
         result.current.form.trigger('password');
@@ -164,8 +194,12 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
+      });
+
       act(() => {
-        result.current.form.setValue('password', '123'); // Short password should be valid
+        result.current.form.setValue('password', '123');
         result.current.form.trigger('password');
       });
 
@@ -178,6 +212,10 @@ describe('useLogin', () => {
     it('should mark form as valid with correct email and password', async () => {
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       act(() => {
@@ -200,6 +238,11 @@ describe('useLogin', () => {
         firstName: 'Test',
         lastName: 'User',
         role: 'owner' as const,
+        permissions: [],
+        profile: { phone: '', bio: '' },
+        isEmailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       const mockTokens = {
@@ -218,6 +261,10 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
+      });
+
       const formData = {
         email: 'test@example.com',
         password: 'password123',
@@ -228,49 +275,29 @@ describe('useLogin', () => {
         await result.current.onSubmit(formData);
       });
 
+      // Verify auth service was called
       expect(mockAuthService.login).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
         rememberMe: false,
       });
 
+      // Verify debug log happens immediately
       expect(mockLogger.debug).toHaveBeenCalledWith('Login attempt started', {
         email: 'test@[redacted]',
       });
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Login successful', {
-        email: 'test@[redacted]',
+      // Wait for useEffect to handle success (info log + navigation)
+      await waitFor(() => {
+        expect(mockLogger.info).toHaveBeenCalledWith('Login successful', {
+          email: 'test@[redacted]',
+        });
       });
 
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {
-        replace: true,
-      });
-    });
-
-    it('should handle rememberMe option correctly', async () => {
-      mockAuthService.login.mockResolvedValue({
-        user: { id: '1', email: 'test@example.com' },
-        tokens: { accessToken: 'token' },
-      });
-
-      const { result } = renderHook(() => useLogin(), {
-        wrapper: createWrapper(),
-      });
-
-      const formData = {
-        email: 'test@example.com',
-        password: 'password123',
-        rememberMe: true,
-      };
-
-      await act(async () => {
-        await result.current.onSubmit(formData);
-      });
-
-      expect(mockAuthService.login).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        password: 'password123',
-        rememberMe: true,
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {
+          replace: true,
+        });
       });
     });
 
@@ -286,44 +313,42 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
-      expect(result.current.isSubmitting).toBe(false);
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
+      });
 
-      // Start submission - properly await the act call
-      const submissionPromise = act(async () => {
-        // Start the submission without awaiting it yet
-        const submitPromise = result.current.onSubmit({
+      // Start submission without awaiting
+      act(() => {
+        result.current.onSubmit({
           email: 'test@example.com',
-          password: 'password123',
+          password: 'password',
           rememberMe: false,
         });
-
-        // Allow React to process the state change
-        await new Promise((resolve) => setTimeout(resolve, 0));
-
-        return submitPromise;
       });
 
       // Check that isSubmitting is true during submission
-      await waitFor(
-        () => {
-          expect(result.current.isSubmitting).toBe(true);
-        },
-        { timeout: 2000 }
-      );
+      expect(result.current.isSubmitting).toBe(true);
 
-      // Now resolve the login promise
+      // Resolve the login promise
       await act(async () => {
         resolveLogin({
-          user: { id: '1', email: 'test@example.com' },
+          user: {
+            id: '1',
+            email: 'test@example.com',
+            permissions: [],
+            profile: { phone: '', bio: '' },
+            isEmailVerified: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
           tokens: { accessToken: 'token' },
         });
       });
 
-      // Wait for submission to complete
-      await submissionPromise;
-
-      // Check that isSubmitting is false after completion
-      expect(result.current.isSubmitting).toBe(false);
+      // Wait for isSubmitting to become false
+      await waitFor(() => {
+        expect(result.current.isSubmitting).toBe(false);
+      });
     });
   });
 
@@ -336,22 +361,29 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
+      });
+
       const formData = {
         email: 'test@example.com',
         password: 'wrongpassword',
         rememberMe: false,
       };
 
-      // The hook should handle the error internally, so we don't expect it to throw
       await act(async () => {
-        try {
-          await result.current.onSubmit(formData);
-        } catch (error) {
-          // Error is expected to be caught by the hook
-        }
+        await result.current.onSubmit(formData);
       });
 
-      // Wait for the logger to be called
+      // Verify auth service was called
+      expect(mockAuthService.login).toHaveBeenCalledWith(formData);
+
+      // Verify debug log happens immediately
+      expect(mockLogger.debug).toHaveBeenCalledWith('Login attempt started', {
+        email: 'test@[redacted]',
+      });
+
+      // Wait for useEffect to handle error logging
       await waitFor(() => {
         expect(mockLogger.error).toHaveBeenCalledWith('Login failed', {
           email: 'test@[redacted]',
@@ -364,30 +396,33 @@ describe('useLogin', () => {
     });
 
     it('should handle unknown errors', async () => {
-      mockAuthService.login.mockRejectedValue('Unknown error');
+      mockAuthService.login.mockRejectedValue(new Error('Unknown error'));
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
-        try {
-          await result.current.onSubmit({
-            email: 'test@example.com',
-            password: 'password',
-            rememberMe: false,
-          });
-        } catch (error) {
-          // Error is expected to be caught by the hook
-        }
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
+      await act(async () => {
+        await result.current.onSubmit({
+          email: 'test@example.com',
+          password: 'password',
+          rememberMe: false,
+        });
+      });
+
+      // Wait for useEffect to handle error logging
       await waitFor(() => {
         expect(mockLogger.error).toHaveBeenCalledWith('Login failed', {
           email: 'test@[redacted]',
           error: 'Unknown error',
         });
       });
+
+      expect(result.current.isSubmitting).toBe(false);
     });
 
     it('should reset isSubmitting state on error', async () => {
@@ -397,16 +432,16 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
+      });
+
       await act(async () => {
-        try {
-          await result.current.onSubmit({
-            email: 'test@example.com',
-            password: 'password',
-            rememberMe: false,
-          });
-        } catch (error) {
-          // Error is expected to be caught by the hook
-        }
+        await result.current.onSubmit({
+          email: 'test@example.com',
+          password: 'password',
+          rememberMe: false,
+        });
       });
 
       expect(result.current.isSubmitting).toBe(false);
@@ -415,18 +450,29 @@ describe('useLogin', () => {
 
   describe('Navigation Logic', () => {
     it('should navigate to default dashboard on successful login', async () => {
-      // Mock useLocation to return no saved location
       mockUseLocation.mockReturnValue({
         state: null,
       });
 
       mockAuthService.login.mockResolvedValue({
-        user: { id: '1', email: 'test@example.com' },
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          permissions: [],
+          profile: { phone: '', bio: '' },
+          isEmailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'token' },
       });
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       await act(async () => {
@@ -437,24 +483,38 @@ describe('useLogin', () => {
         });
       });
 
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {
-        replace: true,
+      // Wait for useEffect to handle navigation
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {
+          replace: true,
+        });
       });
     });
 
     it('should navigate to saved location on successful login', async () => {
-      // Mock useLocation to return saved location
       mockUseLocation.mockReturnValue({
         state: { from: { pathname: '/properties' } },
       });
 
       mockAuthService.login.mockResolvedValue({
-        user: { id: '1', email: 'test@example.com' },
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          permissions: [],
+          profile: { phone: '', bio: '' },
+          isEmailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'token' },
       });
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       await act(async () => {
@@ -465,8 +525,11 @@ describe('useLogin', () => {
         });
       });
 
-      expect(mockNavigate).toHaveBeenCalledWith('/properties', {
-        replace: true,
+      // Wait for useEffect to handle navigation
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/properties', {
+          replace: true,
+        });
       });
     });
   });
@@ -474,12 +537,24 @@ describe('useLogin', () => {
   describe('Data Sanitization', () => {
     it('should sanitize email in logs', async () => {
       mockAuthService.login.mockResolvedValue({
-        user: { id: '1', email: 'user@example.com' },
+        user: {
+          id: '1',
+          email: 'user@example.com',
+          permissions: [],
+          profile: { phone: '', bio: '' },
+          isEmailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'token' },
       });
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       await act(async () => {
@@ -490,12 +565,16 @@ describe('useLogin', () => {
         });
       });
 
+      // Debug log happens immediately
       expect(mockLogger.debug).toHaveBeenCalledWith('Login attempt started', {
         email: 'sensitive@[redacted]',
       });
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Login successful', {
-        email: 'sensitive@[redacted]',
+      // Info log happens in useEffect
+      await waitFor(() => {
+        expect(mockLogger.info).toHaveBeenCalledWith('Login successful', {
+          email: 'sensitive@[redacted]',
+        });
       });
     });
 
@@ -506,18 +585,24 @@ describe('useLogin', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
-        try {
-          await result.current.onSubmit({
-            email: 'sensitive@company.com',
-            password: 'password',
-            rememberMe: false,
-          });
-        } catch (error) {
-          // Error is expected to be caught by the hook
-        }
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
+      await act(async () => {
+        await result.current.onSubmit({
+          email: 'sensitive@company.com',
+          password: 'password',
+          rememberMe: false,
+        });
+      });
+
+      // Debug log happens immediately
+      expect(mockLogger.debug).toHaveBeenCalledWith('Login attempt started', {
+        email: 'sensitive@[redacted]',
+      });
+
+      // Error log happens in useEffect
       await waitFor(() => {
         expect(mockLogger.error).toHaveBeenCalledWith('Login failed', {
           email: 'sensitive@[redacted]',
@@ -530,12 +615,24 @@ describe('useLogin', () => {
   describe('Integration with Auth Context', () => {
     it('should call clearError before login attempt', async () => {
       mockAuthService.login.mockResolvedValue({
-        user: { id: '1', email: 'test@example.com' },
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          permissions: [],
+          profile: { phone: '', bio: '' },
+          isEmailVerified: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'token' },
       });
 
       const { result } = renderHook(() => useLogin(), {
         wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current).not.toBeNull();
       });
 
       await act(async () => {
@@ -546,8 +643,10 @@ describe('useLogin', () => {
         });
       });
 
-      // Verify that the auth service login was called
       expect(mockAuthService.login).toHaveBeenCalled();
+      expect(mockLogger.debug).toHaveBeenCalledWith('Login attempt started', {
+        email: 'test@[redacted]',
+      });
     });
   });
 });

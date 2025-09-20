@@ -1,11 +1,11 @@
-// src/features/auth/hooks/useRegister.ts
+// src/domains/auth/hooks/useRegister.ts - FIXED TO ALIGN WITH RESPONSIBILITY MODEL
+
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/hooks';
 import { logger } from '@/shared/utils/logger';
-import { USER_ROLES, roleValues } from '@/shared/constants/roles';
 import type { UserRole } from '@/shared/types/global.types';
 import type { UseFormReturn } from 'react-hook-form';
 import {
@@ -81,9 +81,6 @@ export interface UseRegisterReturn
   // Submission
   onSubmit: (data: RegisterFormData) => Promise<void>;
   isSubmitting: boolean;
-  submitError: string | null;
-  clearSubmitError: () => void;
-  submitAttempts: number;
 
   // Field management
   focusField: (field: keyof RegisterFormData) => void;
@@ -105,33 +102,35 @@ export interface UseRegisterReturn
 // ============== Hook Implementation ==============
 
 export const useRegister = (): UseRegisterReturn => {
-  const { register: registerUser } = useAuth();
+  const {
+    register: registerUser,
+    error,
+    isLoading,
+    isAuthenticated,
+    clearError,
+  } = useAuth();
   const navigate = useNavigate();
 
-  // State
+  // State - ONLY form/UI state, no error state
   const [currentStep, setCurrentStep] = useState<RegistrationStep>('personal');
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitAttempts, setSubmitAttempts] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastRegistrationAttempt, setLastRegistrationAttempt] = useState<{
+    email: string;
+    timestamp: number;
+  } | null>(null);
 
-  // Refs for field focus management
-  const fieldRefs = useRef<
-    Partial<Record<keyof RegisterFormData, HTMLElement | null>>
-  >({});
-
-  // React Hook Form
+  // Form setup
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(RegisterSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
-    criteriaMode: 'all',
     defaultValues: {
       firstName: '',
       lastName: '',
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'owner' as UserRole,
+      role: undefined,
       organizationName: '',
       organizationType: undefined,
       acceptsTerms: false,
@@ -146,11 +145,14 @@ export const useRegister = (): UseRegisterReturn => {
     watch,
     setValue,
     trigger,
-    clearErrors,
     getValues,
+    clearErrors,
   } = form;
 
-  const watchedValues = watch();
+  // Field refs for focus management
+  const fieldRefs = useRef<
+    Partial<Record<keyof RegisterFormData, HTMLElement | null>>
+  >({});
 
   // ============== Computed Values ==============
 
@@ -159,31 +161,74 @@ export const useRegister = (): UseRegisterReturn => {
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
+  // Watch individual fields (not as array to avoid TypeScript issues)
+  const watchedRole = watch('role');
+  const watchedOrgName = watch('organizationName');
+  const watchedOrgType = watch('organizationType');
+
   const roleOptions = useMemo(
-    () =>
-      roleValues.map((role) => ({
-        value: role,
-        label: USER_ROLES[role].label,
-        description: USER_ROLES[role].description,
-      })),
+    () => [
+      {
+        value: 'buyer' as UserRole,
+        label: 'Property Buyer',
+        description: 'Looking to purchase property',
+      },
+      {
+        value: 'owner' as UserRole,
+        label: 'Property Owner',
+        description: 'Own property and need due diligence',
+      },
+      {
+        value: 'solicitor' as UserRole,
+        label: 'Solicitor',
+        description: 'Legal professional reviewing property packs',
+      },
+      {
+        value: 'agent' as UserRole,
+        label: 'Estate Agent',
+        description: 'Real estate professional managing sales',
+      },
+    ],
     []
   );
 
-  const requiresOrganization = useMemo(
-    () => ['agent', 'solicitor'].includes(watchedValues.role),
-    [watchedValues.role]
-  );
+  const requiresOrganization = useMemo(() => {
+    return watchedRole === 'agent' || watchedRole === 'solicitor';
+  }, [watchedRole]);
 
   const isOrganizationDataValid = useMemo(() => {
     if (!requiresOrganization) return true;
-    return !!(
-      watchedValues.organizationName?.trim() && watchedValues.organizationType
+    return !!(watchedOrgName?.trim() && watchedOrgType);
+  }, [requiresOrganization, watchedOrgName, watchedOrgType]);
+
+  // ============== Auth State Response (Following useLogin Pattern) ==============
+
+  useEffect(() => {
+    if (!lastRegistrationAttempt || isLoading) {
+      return;
+    }
+
+    const sanitizedEmail = lastRegistrationAttempt.email.replace(
+      /@.*/,
+      '@[redacted]'
     );
-  }, [
-    requiresOrganization,
-    watchedValues.organizationName,
-    watchedValues.organizationType,
-  ]);
+
+    if (isAuthenticated && !error) {
+      // Registration was successful
+      logger.info('Registration successful', { email: sanitizedEmail });
+      navigate('/dashboard', { replace: true });
+      setLastRegistrationAttempt(null); // Clear the attempt
+    } else if (error && !isLoading) {
+      // Registration failed with error
+      logger.error('Registration failed', {
+        email: sanitizedEmail,
+        error: error,
+      });
+      setLastRegistrationAttempt(null); // Clear the attempt
+      // Scroll to show error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isAuthenticated, error, isLoading, lastRegistrationAttempt, navigate]);
 
   // ============== Effects ==============
 
@@ -196,10 +241,10 @@ export const useRegister = (): UseRegisterReturn => {
     }
   }, [requiresOrganization, setValue, clearErrors]);
 
-  // Clear submit error on step change
+  // Clear auth error on step change
   useEffect(() => {
-    setSubmitError(null);
-  }, [currentStep]);
+    clearError();
+  }, [currentStep, clearError]);
 
   // Register field refs for focus management
   const registerWithRef = useCallback(
@@ -374,7 +419,7 @@ export const useRegister = (): UseRegisterReturn => {
     }
   }, [isFirstStep, currentStepIndex, focusField]);
 
-  // ============== Submission ==============
+  // ============== Submission (Following Responsibility Model) ==============
 
   const onSubmit = useCallback(
     async (data: RegisterFormData): Promise<void> => {
@@ -385,72 +430,48 @@ export const useRegister = (): UseRegisterReturn => {
       }
 
       setIsSubmitting(true);
-      setSubmitError(null);
-      setSubmitAttempts((prev) => prev + 1);
 
-      try {
-        logger.debug('Registration attempt started', {
-          email: data.email,
-          role: data.role,
-          attempt: submitAttempts + 1,
-        });
+      const sanitizedEmail = data.email.replace(/@.*/, '@[redacted]');
+      logger.debug('Registration attempt started', { email: sanitizedEmail });
 
-        // Prepare organization data if required
-        const organization = requiresOrganization
-          ? {
-              name: data.organizationName?.trim() || '',
-              type: data.organizationType,
-            }
-          : undefined;
+      // Track this registration attempt
+      setLastRegistrationAttempt({
+        email: data.email,
+        timestamp: Date.now(),
+      });
 
-        // Call auth service
-        await registerUser({
-          email: data.email.toLowerCase().trim(),
-          password: data.password,
-          confirmPassword: data.confirmPassword,
-          firstName: data.firstName.trim(),
-          lastName: data.lastName.trim(),
-          role: data.role,
-          organizationName: organization?.name,
-          organizationType: organization?.type,
-          acceptsTerms: data.acceptsTerms,
-          acceptsMarketing: data.acceptsMarketing,
-        });
+      // Clear any previous errors before submission
+      clearError();
 
-        logger.info('Registration successful', {
-          email: data.email,
-          role: data.role,
-        });
+      // Prepare organization data if required
+      const organization = requiresOrganization
+        ? {
+            name: data.organizationName?.trim() || '',
+            type: data.organizationType,
+          }
+        : undefined;
 
-        // Navigate to dashboard
-        navigate('/dashboard', { replace: true });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Registration failed';
+      // Call AuthContext register - follows responsibility model (never throws)
+      await registerUser({
+        email: data.email.toLowerCase().trim(),
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        role: data.role,
+        organizationName: organization?.name,
+        organizationType: organization?.type,
+        acceptsTerms: data.acceptsTerms,
+        acceptsMarketing: data.acceptsMarketing,
+      });
 
-        logger.error('Registration failed', {
-          email: data.email,
-          role: data.role,
-          error: errorMessage,
-          attempt: submitAttempts + 1,
-        });
+      // Note: Success/error handling is now in useEffect above
+      // which responds to auth context state changes
 
-        setSubmitError(errorMessage);
-
-        // Scroll to show error
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } finally {
-        setIsSubmitting(false);
-      }
+      setIsSubmitting(false);
     },
-    [isSubmitting, submitAttempts, requiresOrganization, registerUser, navigate]
+    [isSubmitting, requiresOrganization, registerUser, clearError]
   );
-
-  // ============== Clear Submit Error ==============
-
-  const clearSubmitError = useCallback((): void => {
-    setSubmitError(null);
-  }, []);
 
   // ============== Return ==============
 
@@ -485,13 +506,9 @@ export const useRegister = (): UseRegisterReturn => {
     clearStepErrors,
     hasStepErrors,
 
-    // Submission
+    // Submission - FOLLOWS RESPONSIBILITY MODEL
     onSubmit,
-    isSubmitting: isSubmitting,
-    submitError,
-    clearSubmitError,
-    submitAttempts,
-
+    isSubmitting,
     // Field management
     focusField,
     scrollToFirstError,

@@ -1,6 +1,6 @@
 // src/domains/auth/hooks/useLogin.ts
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/hooks';
 import { logger } from '@/shared/utils';
@@ -18,10 +18,14 @@ export interface UseLoginReturn {
 }
 
 export const useLogin = (): UseLoginReturn => {
-  const { login, clearError, error, isLoading } = useAuth();
+  const { login, clearError, error, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastLoginAttempt, setLastLoginAttempt] = useState<{
+    email: string;
+    timestamp: number;
+  } | null>(null);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -39,6 +43,29 @@ export const useLogin = (): UseLoginReturn => {
     [location.state?.from?.pathname]
   );
 
+  // Handle auth state changes after login attempts
+  useEffect(() => {
+    if (!lastLoginAttempt || isLoading) {
+      return;
+    }
+
+    const sanitizedEmail = lastLoginAttempt.email.replace(/@.*/, '@[redacted]');
+
+    if (isAuthenticated && !error) {
+      // Login was successful
+      logger.info('Login successful', { email: sanitizedEmail });
+      navigate(from, { replace: true });
+      setLastLoginAttempt(null); // Clear the attempt
+    } else if (error && !isLoading) {
+      // Login failed with error
+      logger.error('Login failed', {
+        email: sanitizedEmail,
+        error: error,
+      });
+      setLastLoginAttempt(null); // Clear the attempt
+    }
+  }, [isAuthenticated, error, isLoading, lastLoginAttempt, navigate, from]);
+
   const onSubmit = useCallback(
     async (data: LoginFormData): Promise<void> => {
       setIsSubmitting(true);
@@ -46,33 +73,39 @@ export const useLogin = (): UseLoginReturn => {
       try {
         const sanitizedEmail = data.email.replace(/@.*/, '@[redacted]');
         logger.debug('Login attempt started', { email: sanitizedEmail });
+
+        // Track this login attempt
+        setLastLoginAttempt({
+          email: data.email,
+          timestamp: Date.now(),
+        });
+
+        // Clear any previous errors
         clearError();
+
+        // Attempt login - AuthContext will handle success/error state updates
         await login({
           email: data.email,
           password: data.password,
           rememberMe: data.rememberMe ?? false,
         });
-        if (!error && !isLoading) {
-          logger.info('Login successful', { email: sanitizedEmail });
-          navigate(from, { replace: true });
-        } else if (error) {
-          logger.error('Login failed', {
-            email: sanitizedEmail,
-            error: error,
-          });
-        }
+
+        // Note: Success/error handling is now in useEffect above
+        // which responds to auth context state changes
       } catch (unexpectedError) {
+        // This should only catch unexpected errors since AuthContext login doesn't throw
         logger.error('Unexpected login error', {
           error:
             unexpectedError instanceof Error
               ? unexpectedError.message
               : 'Unknown error',
         });
+        setLastLoginAttempt(null);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [login, navigate, from, clearError, error, isLoading]
+    [login, clearError]
   );
 
   return {
