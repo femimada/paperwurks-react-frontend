@@ -275,7 +275,6 @@ describe('useLogin', () => {
     });
 
     it('should set isSubmitting state correctly during submission', async () => {
-      // Create a controlled promise that resolves synchronously with setTimeout
       let resolveLogin: (value: any) => void;
       const loginPromise = new Promise((resolve) => {
         resolveLogin = resolve;

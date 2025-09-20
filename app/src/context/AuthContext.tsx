@@ -1,4 +1,5 @@
-// src/context/AuthContext.tsx
+// src/context/AuthContext.tsx - BOUNDARY-COMPLIANT VERSION
+
 import {
   createContext,
   useReducer,
@@ -56,7 +57,7 @@ export interface AuthContextType {
     currentPassword: string;
     newPassword: string;
   }) => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<User>;
+  updateProfile: (data: Partial<User>) => Promise<User | null>;
   verifyEmail: (token: string) => Promise<void>;
   resendVerification: () => Promise<void>;
   clearError: () => void;
@@ -138,7 +139,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'AUTH_ERROR',
         payload: errorPayload,
       });
-      throw error;
     }
   }, []);
 
@@ -159,7 +159,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'AUTH_ERROR',
         payload: errorPayload,
       });
-      throw error;
     }
   }, []);
 
@@ -177,7 +176,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshToken = useCallback(async () => {
     try {
-      const authResponse = await authService.refreshToken(); // Now standardized to return AuthResponse
+      const authResponse = await authService.refreshToken();
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: authResponse,
@@ -185,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logger.debug('Token refresh successful');
     } catch (error: any) {
       dispatch({ type: 'AUTH_LOGOUT' });
-      throw error;
+      logger.error('Token refresh failed, logging out', error);
     }
   }, []);
 
@@ -193,6 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'AUTH_LOADING' });
     try {
       await authService.forgotPassword(email);
+      dispatch({ type: 'CLEAR_ERROR' });
       logger.debug('Password reset email sent');
     } catch (error: any) {
       const errorPayload: AuthErrorPayload = {
@@ -202,7 +202,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'AUTH_ERROR',
         payload: errorPayload,
       });
-      throw error;
     }
   }, []);
 
@@ -225,7 +224,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           type: 'AUTH_ERROR',
           payload: errorPayload,
         });
-        throw error;
       }
     },
     []
@@ -237,7 +235,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         await authService.changePassword(data);
         dispatch({ type: 'AUTH_LOGOUT' });
-        logger.debug('Password change successful, user logged out.');
+        logger.debug('Password change successful, user logged out');
       } catch (error: any) {
         const errorPayload: AuthErrorPayload = {
           message: error.message || 'Password change failed',
@@ -246,33 +244,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           type: 'AUTH_ERROR',
           payload: errorPayload,
         });
-        throw error;
       }
     },
     []
   );
 
-  const updateProfile = useCallback(async (data: Partial<User>) => {
-    dispatch({ type: 'AUTH_LOADING' });
-    try {
-      const updatedUser = await authService.updateProfile(data);
-      dispatch({
-        type: 'UPDATE_USER',
-        payload: updatedUser,
-      });
-      logger.debug('Profile update successful');
-      return updatedUser;
-    } catch (error: any) {
-      const errorPayload: AuthErrorPayload = {
-        message: error.message || 'Profile update failed',
-      };
-      dispatch({
-        type: 'AUTH_ERROR',
-        payload: errorPayload,
-      });
-      throw error;
-    }
-  }, []);
+  const updateProfile = useCallback(
+    async (data: Partial<User>): Promise<User | null> => {
+      dispatch({ type: 'AUTH_LOADING' });
+      try {
+        const updatedUser = await authService.updateProfile(data);
+        dispatch({
+          type: 'UPDATE_USER',
+          payload: updatedUser,
+        });
+        logger.debug('Profile update successful');
+        return updatedUser;
+      } catch (error: any) {
+        const errorPayload: AuthErrorPayload = {
+          message: error.message || 'Profile update failed',
+        };
+        dispatch({
+          type: 'AUTH_ERROR',
+          payload: errorPayload,
+        });
+        return null;
+      }
+    },
+    []
+  );
 
   const verifyEmail = useCallback(async (token: string) => {
     dispatch({ type: 'AUTH_LOADING' });
@@ -288,7 +288,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'AUTH_ERROR',
         payload: errorPayload,
       });
-      throw error;
     }
   }, []);
 
@@ -296,6 +295,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'AUTH_LOADING' });
     try {
       await authService.resendVerification();
+      dispatch({ type: 'CLEAR_ERROR' });
       logger.debug('Verification email resent successfully');
     } catch (error: any) {
       const errorPayload: AuthErrorPayload = {
@@ -305,16 +305,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'AUTH_ERROR',
         payload: errorPayload,
       });
-      throw error;
     }
   }, []);
 
   const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });
-    logger.debug('Error cleared');
   }, []);
 
-  // Listen for logout event from interceptors
   useEffect(() => {
     const handleAuthLogout = () => {
       dispatch({ type: 'AUTH_LOGOUT' });
@@ -325,19 +322,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      if (
-        TokenService.hasValidTokens() &&
-        !TokenService.isTokenExpired(TokenService.getAccessToken())
-      ) {
-        try {
+      try {
+        if (
+          TokenService.hasValidTokens() &&
+          !TokenService.isTokenExpired(TokenService.getAccessToken())
+        ) {
           const user = await authService.getCurrentUser();
           dispatch({
             type: 'AUTH_SUCCESS',
             payload: { user, tokens: TokenService.getTokens()! },
           });
-        } catch (error) {
-          dispatch({ type: 'AUTH_LOGOUT' });
         }
+      } catch (error) {
+        dispatch({ type: 'AUTH_LOGOUT' });
       }
     };
     initializeAuth();

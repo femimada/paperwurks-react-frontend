@@ -203,6 +203,36 @@ interface AuthActions {
 }
 ```
 
+####
+
+```typescript
+class ResponsibilityModel {
+  authService = {
+    job: "Raw API communication",
+    errors: "Throw network/validation errors",
+    state: "None - stateless",
+  };
+
+  authContext = {
+    job: "Global state management",
+    errors: "Convert exceptions to state",
+    state: "user, isAuthenticated, error, isLoading",
+  };
+
+  useLogin = {
+    job: "Form & navigation logic",
+    errors: "Read error state, never throw",
+    state: "isSubmitting, form data",
+  };
+
+  components = {
+    job: "Render UI based on state",
+    errors: "Display error messages from state",
+    state: "Local UI state only",
+  };
+}
+```
+
 #### Application Context
 
 ```typescript

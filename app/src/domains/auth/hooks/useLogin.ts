@@ -1,4 +1,5 @@
 // src/domains/auth/hooks/useLogin.ts
+
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/domains/auth/hooks';
@@ -16,23 +17,15 @@ export interface UseLoginReturn {
   form: ReturnType<typeof useForm<LoginFormData>>;
 }
 
-/**
- * Custom hook for login authentication logic
- *
- * Handles authentication and navigation logic with simplified validation
- * for better user experience - complex password rules only apply during registration
- *
- * @returns {UseLoginReturn} Submission handler and state
- */
 export const useLogin = (): UseLoginReturn => {
-  const { login, clearError } = useAuth();
+  const { login, clearError, error, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
-    mode: 'onBlur', // Changed from onChange to reduce aggressive validation
+    mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: {
       email: '',
@@ -46,43 +39,40 @@ export const useLogin = (): UseLoginReturn => {
     [location.state?.from?.pathname]
   );
 
-  /**
-   * Handle form submission
-   */
   const onSubmit = useCallback(
     async (data: LoginFormData): Promise<void> => {
       setIsSubmitting(true);
+
       try {
-        // Sanitize data for logging
         const sanitizedEmail = data.email.replace(/@.*/, '@[redacted]');
         logger.debug('Login attempt started', { email: sanitizedEmail });
-        const rememberMe = data.rememberMe ?? false;
-
-        // Clear any previous errors before submission
         clearError();
-
-        // Call login from auth context
         await login({
           email: data.email,
           password: data.password,
-          rememberMe: rememberMe,
+          rememberMe: data.rememberMe ?? false,
         });
-
-        logger.info('Login successful', { email: sanitizedEmail });
-
-        // Navigate to intended page
-        navigate(from, { replace: true });
-      } catch (error) {
-        logger.error('Login failed', {
-          email: data.email.replace(/@.*/, '@[redacted]'),
-          error: error instanceof Error ? error.message : 'Unknown error',
+        if (!error && !isLoading) {
+          logger.info('Login successful', { email: sanitizedEmail });
+          navigate(from, { replace: true });
+        } else if (error) {
+          logger.error('Login failed', {
+            email: sanitizedEmail,
+            error: error,
+          });
+        }
+      } catch (unexpectedError) {
+        logger.error('Unexpected login error', {
+          error:
+            unexpectedError instanceof Error
+              ? unexpectedError.message
+              : 'Unknown error',
         });
-        // Error is already set in context by login
       } finally {
         setIsSubmitting(false);
       }
     },
-    [login, navigate, from, clearError]
+    [login, navigate, from, clearError, error, isLoading]
   );
 
   return {
