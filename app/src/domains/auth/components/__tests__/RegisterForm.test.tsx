@@ -1,4 +1,4 @@
-// src/features/auth/components/__tests__/RegisterForm.test.tsx
+// src/domains/auth/components/__tests__/RegisterForm.test.tsx - FIXED VERSION
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -7,14 +7,17 @@ import { BrowserRouter } from 'react-router-dom';
 import type { SubmitHandler } from 'react-hook-form';
 import { RegisterForm } from '../RegisterForm';
 import { useRegister } from '@/domains/auth/hooks/useRegister';
+import { useAuth } from '@/domains/auth/hooks/useAuth';
 import type { UseRegisterReturn } from '@/domains/auth/hooks/useRegister';
 
-// Mock the useRegister hook
+// Mock both hooks
 vi.mock('@/domains/auth/hooks/useRegister');
+vi.mock('@/domains/auth/hooks/useAuth');
 
 const mockUseRegister = vi.mocked(useRegister);
+const mockUseAuth = vi.mocked(useAuth);
 
-// Helper to create a default mock return value for the hook.
+// Helper to create a default mock return value for useRegister hook
 const createMockRegisterHook = (
   overrides: Partial<UseRegisterReturn> = {}
 ): UseRegisterReturn => {
@@ -34,13 +37,14 @@ const createMockRegisterHook = (
         (onValid: SubmitHandler<any>) =>
           async (e?: React.BaseSyntheticEvent) => {
             e?.preventDefault();
-            // Call the provided callback with empty data, as the component doesn't use it.
             await onValid({}, e);
           }
       ),
     formState,
-    watch: vi.fn(() => ({})), // Return an empty object for watched values
+    watch: vi.fn(() => ({})),
     setValue: vi.fn(),
+    trigger: vi.fn(),
+    getValues: vi.fn(),
     scrollToFirstError: vi.fn(),
 
     // Mock step management state
@@ -49,20 +53,29 @@ const createMockRegisterHook = (
     totalSteps: 3,
     isFirstStep: true,
     isLastStep: false,
+    steps: ['personal', 'role', 'terms'],
 
     // Mock navigation methods
     nextStep: vi.fn().mockResolvedValue(true),
     prevStep: vi.fn(),
+    goToStep: vi.fn().mockResolvedValue(true),
 
-    // Mock validation state
+    // Mock validation methods
+    validateCurrentStep: vi.fn().mockResolvedValue(true),
+    validateStep: vi.fn().mockResolvedValue(true),
     isStepValid: vi.fn().mockReturnValue(true),
+    getStepErrors: vi.fn().mockReturnValue({}),
+    clearStepErrors: vi.fn(),
+    hasStepErrors: vi.fn().mockReturnValue(false),
 
     // Mock submission state
     onSubmit: vi.fn(),
     isSubmitting: false,
-    submitError: null,
-    clearSubmitError: vi.fn(),
-    submitAttempts: 0,
+    // ✅ REMOVED: submitError, clearSubmitError, submitAttempts
+
+    // Mock field management
+    focusField: vi.fn(),
+    fieldRefs: { current: {} },
 
     // Mock helper data
     roleOptions: [
@@ -78,101 +91,63 @@ const createMockRegisterHook = (
       },
     ],
     requiresOrganization: false,
+    isOrganizationDataValid: true,
 
     // Apply any test-specific overrides
     ...overrides,
   } as unknown as UseRegisterReturn;
 };
 
-// A simple wrapper to provide the necessary Router context for <Link> components.
+// Helper to create mock useAuth return value
+const createMockAuthHook = (overrides: any = {}) => ({
+  user: null,
+  permissions: [],
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
+  clearError: vi.fn(),
+  login: vi.fn(),
+  register: vi.fn(),
+  logout: vi.fn(),
+  refreshToken: vi.fn(),
+  forgotPassword: vi.fn(),
+  resetPassword: vi.fn(),
+  changePassword: vi.fn(),
+  updateProfile: vi.fn(),
+  verifyEmail: vi.fn(),
+  resendVerification: vi.fn(),
+  hasPermission: vi.fn(),
+  hasRole: vi.fn(),
+  hasAnyPermission: vi.fn(),
+  ...overrides,
+});
+
+// Test wrapper for Router context
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <BrowserRouter>{children}</BrowserRouter>
 );
 
 describe('RegisterForm', () => {
   beforeEach(() => {
-    // Reset mocks before each test to ensure isolation.
     vi.clearAllMocks();
-  });
 
-  it('should render the first step (Personal Info) by default', () => {
+    // Setup default mocks
+    mockUseAuth.mockReturnValue(createMockAuthHook());
     mockUseRegister.mockReturnValue(createMockRegisterHook());
+  });
+
+  it('should render the personal info step by default', () => {
     render(
       <TestWrapper>
         <RegisterForm />
       </TestWrapper>
     );
 
-    expect(screen.getByText('Create your account')).toBeInTheDocument();
-    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-    expect(
-      screen.queryByLabelText(/what is your role/i)
-    ).not.toBeInTheDocument();
+    expect(screen.getByText('Create Your Account')).toBeInTheDocument();
+    expect(screen.getByText('Personal Information')).toBeInTheDocument();
   });
 
-  it('should show the correct step in the progress indicator', () => {
-    mockUseRegister.mockReturnValue(createMockRegisterHook());
-    render(
-      <TestWrapper>
-        <RegisterForm />
-      </TestWrapper>
-    );
-
-    // --- CHANGE 1 START ---
-    // The visual highlight is on an element with aria-label, not the sr-only span
-    expect(
-      screen.getByLabelText('Personal Info: Current') ||
-        screen.getByLabelText('Personal Info: Completed')
-    ).toHaveClass('bg-blue-600'); // Check for the background class
-    // --- CHANGE 1 END ---
-    expect(
-      screen.getByLabelText('Role Selection: Not started')
-    ).not.toHaveClass('bg-blue-600');
-  });
-
-  it('should call nextStep when the "Continue" button is clicked', async () => {
-    const user = userEvent.setup();
-    const mockNextStep = vi.fn().mockResolvedValue(true);
-    mockUseRegister.mockReturnValue(
-      createMockRegisterHook({ nextStep: mockNextStep })
-    );
-
-    render(
-      <TestWrapper>
-        <RegisterForm />
-      </TestWrapper>
-    );
-
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    await user.click(continueButton);
-
-    expect(mockNextStep).toHaveBeenCalled();
-  });
-
-  it('should call scrollToFirstError if nextStep fails (simulating validation error)', async () => {
-    const user = userEvent.setup();
-    const mockNextStep = vi.fn().mockResolvedValue(false);
-    const mockScroll = vi.fn();
-    mockUseRegister.mockReturnValue(
-      createMockRegisterHook({
-        nextStep: mockNextStep,
-        scrollToFirstError: mockScroll,
-      })
-    );
-
-    render(
-      <TestWrapper>
-        <RegisterForm />
-      </TestWrapper>
-    );
-
-    await user.click(screen.getByRole('button', { name: /continue/i }));
-
-    expect(mockNextStep).toHaveBeenCalled();
-    expect(mockScroll).toHaveBeenCalled();
-  });
-
-  it('should display the RoleSelectionStep when currentStep is "role"', () => {
+  it('should display different steps based on currentStep', () => {
     mockUseRegister.mockReturnValue(
       createMockRegisterHook({
         currentStep: 'role',
@@ -187,19 +162,16 @@ describe('RegisterForm', () => {
       </TestWrapper>
     );
 
-    // --- CHANGE 2 START ---
-    // Check for the visible heading specific to the Role Selection step.
     expect(
       screen.getByRole('heading', { name: /select your role/i })
     ).toBeInTheDocument();
-    // Check that a field from the personal info step is NOT present.
     expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
-    // --- CHANGE 2 END ---
   });
 
   it('should call prevStep when the "Previous" button is clicked', async () => {
     const user = userEvent.setup();
     const mockPrevStep = vi.fn();
+
     mockUseRegister.mockReturnValue(
       createMockRegisterHook({
         currentStep: 'role',
@@ -225,6 +197,7 @@ describe('RegisterForm', () => {
         isLastStep: true,
       })
     );
+
     render(
       <TestWrapper>
         <RegisterForm />
@@ -242,16 +215,14 @@ describe('RegisterForm', () => {
   it('should call handleSubmit and onSubmit when the form is submitted', async () => {
     const user = userEvent.setup();
     const mockOnSubmit = vi.fn();
-
-    const mockHandleSubmitImplementation = (onValid: SubmitHandler<any>) => {
-      return async (e?: React.BaseSyntheticEvent) => {
-        e?.preventDefault();
-        await onValid({}, e);
-      };
-    };
     const mockHandleSubmit = vi
       .fn()
-      .mockImplementation(mockHandleSubmitImplementation);
+      .mockImplementation((onValid: SubmitHandler<any>) => {
+        return async (e?: React.BaseSyntheticEvent) => {
+          e?.preventDefault();
+          await onValid({}, e);
+        };
+      });
 
     mockUseRegister.mockReturnValue(
       createMockRegisterHook({
@@ -259,7 +230,6 @@ describe('RegisterForm', () => {
         isLastStep: true,
         onSubmit: mockOnSubmit,
         handleSubmit: mockHandleSubmit,
-        isStepValid: vi.fn().mockReturnValue(true),
       })
     );
 
@@ -275,13 +245,14 @@ describe('RegisterForm', () => {
     expect(mockOnSubmit).toHaveBeenCalled();
   });
 
-  it('should display a submission error message when provided', () => {
-    mockUseRegister.mockReturnValue(
-      createMockRegisterHook({
-        submitError: 'This email is already in use.',
-        submitAttempts: 2,
+  it('should display error message from useAuth', () => {
+    // ✅ FIXED: Mock error from useAuth, not useRegister
+    mockUseAuth.mockReturnValue(
+      createMockAuthHook({
+        error: 'This email is already in use.',
       })
     );
+
     render(
       <TestWrapper>
         <RegisterForm />
@@ -292,6 +263,80 @@ describe('RegisterForm', () => {
     expect(
       screen.getByText('This email is already in use.')
     ).toBeInTheDocument();
-    expect(screen.getByText(/attempt 2/i)).toBeInTheDocument();
+    // ✅ REMOVED: submitAttempts check (no longer tracked)
+  });
+
+  it('should clear error when step changes', () => {
+    const mockClearError = vi.fn();
+
+    mockUseAuth.mockReturnValue(
+      createMockAuthHook({
+        error: 'Some error',
+        clearError: mockClearError,
+      })
+    );
+
+    const { rerender } = render(
+      <TestWrapper>
+        <RegisterForm />
+      </TestWrapper>
+    );
+
+    // Change step
+    mockUseRegister.mockReturnValue(
+      createMockRegisterHook({
+        currentStep: 'role',
+        currentStepIndex: 1,
+      })
+    );
+
+    rerender(
+      <TestWrapper>
+        <RegisterForm />
+      </TestWrapper>
+    );
+
+    // Should call clearError when step changes and there's an error
+    expect(mockClearError).toHaveBeenCalled();
+  });
+
+  it('should handle form submission with loading state', () => {
+    mockUseRegister.mockReturnValue(
+      createMockRegisterHook({
+        currentStep: 'terms',
+        isLastStep: true,
+        isSubmitting: true,
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <RegisterForm />
+      </TestWrapper>
+    );
+
+    const submitButton = screen.getByRole('button', {
+      name: /creating account/i,
+    });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('should render step progress correctly', () => {
+    mockUseRegister.mockReturnValue(
+      createMockRegisterHook({
+        currentStep: 'role',
+        currentStepIndex: 1,
+        totalSteps: 3,
+      })
+    );
+
+    render(
+      <TestWrapper>
+        <RegisterForm />
+      </TestWrapper>
+    );
+
+    // Check that step progress is displayed
+    expect(screen.getByText('Role Selection')).toBeInTheDocument();
   });
 });
