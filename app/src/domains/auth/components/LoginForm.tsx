@@ -1,5 +1,5 @@
 // src/features/auth/components/LoginForm.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth, useLogin } from '@/domains/auth/hooks';
@@ -13,7 +13,6 @@ import {
   Card,
 } from '@/shared/components/ui';
 import { cn } from '@/lib/utils';
-import { logger } from '@/shared/utils';
 
 interface LoginFormProps {
   className?: string;
@@ -32,13 +31,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   testId = 'login-form',
   showCard = true,
   showLinks = true,
-  variant = 'default',
 }) => {
-  const { error, clearError } = useAuth();
+  const { error, clearError, isLoading } = useAuth();
   const { onSubmit, isSubmitting, form } = useLogin();
   const [showPassword, setShowPassword] = useState(false);
-  const emailInputRef = useRef<HTMLInputElement>(null);
-  const hasFocusedRef = useRef<boolean>(false);
+
   const {
     register,
     handleSubmit,
@@ -46,35 +43,26 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     formState: { errors, isValid },
   } = form;
 
+  // Auto-focus email input on mount
   useEffect(() => {
     setFocus('email');
-    hasFocusedRef.current = true;
   }, [setFocus]);
 
+  // Focus management for validation errors
   useEffect(() => {
     if (errors.email) {
-      hasFocusedRef.current = false;
+      setFocus('email');
+    } else if (errors.password) {
+      setFocus('password');
     }
-  }, [errors.email]);
+  }, [errors.email, errors.password, setFocus]);
 
-  useEffect(() => {
-    if (errors.email && emailInputRef.current && !hasFocusedRef.current) {
-      logger.debug('Focusing email input due to validation error', {
-        error: errors.email.message,
-      });
-      emailInputRef.current.focus();
-      hasFocusedRef.current = true;
-    }
-  }, [errors.email]);
-
+  // Clear auth error on unmount only
   useEffect(() => {
     return () => {
-      if (!error) {
-        logger.debug('Clearing error on unmount');
-        clearError();
-      }
+      clearError(); // Always clear on unmount, regardless of current error state
     };
-  }, [clearError, error]);
+  }, [clearError]); // Remove 'error' from dependencies
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -114,11 +102,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             {...register('email')}
-            ref={emailInputRef}
+            id="email"
             type="email"
             placeholder="Enter your email"
             className="pl-10"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
             data-testid="email-input"
           />
         </div>
@@ -141,10 +129,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             {...register('password')}
+            id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Enter your password"
             className="pl-10 pr-10"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
             data-testid="password-input"
           />
           <Button
@@ -171,10 +160,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         )}
       </div>
 
-      {/* Remember Me & Forgot Password */}
+      {/* Remember Me and Forgot Password */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Checkbox
+            id="rememberMe"
             {...register('rememberMe')}
             disabled={isSubmitting}
             data-testid="remember-me-checkbox"
@@ -183,7 +173,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             Remember me
           </label>
         </div>
-
         {showLinks && (
           <Link
             to="/auth/forgot-password"
@@ -198,13 +187,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       {/* Submit Button */}
       <Button
         type="submit"
-        variant="default"
-        size={variant === 'compact' ? 'sm' : 'default'}
-        disabled={!isValid || isSubmitting}
         className="w-full"
+        disabled={isSubmitting || isLoading || !isValid} // Use both loading states
         data-testid="login-submit-button"
       >
-        {isSubmitting ? (
+        {isSubmitting || isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Signing in...
@@ -214,7 +201,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         )}
       </Button>
 
-      {/* Sign Up Link */}
+      {/* Register Link */}
       {showLinks && (
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
@@ -230,8 +217,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
       )}
 
-      {/* Development Demo Credentials */}
-      {(import.meta.env.VITE_NODE_ENV === 'development' ||
+      {/* Demo Credentials */}
+      {(process.env.NODE_ENV === 'development' ||
         process.env.NODE_ENV === 'test') && (
         <div
           className="mt-6 p-4 bg-secondary rounded-md"
@@ -272,5 +259,3 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return formContent;
 };
-
-export default React.memo(LoginForm);
