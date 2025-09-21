@@ -8,19 +8,22 @@ import { z } from 'zod';
 
 // Common email validation
 export const EmailSchema = z
-  .string()
-  .min(1, 'Email is required')
-  .email('Please enter a valid email address')
+  .email({
+    error: (iss) =>
+      iss.input === undefined
+        ? `Email is required.`
+        : 'Please enter a valid email address',
+  })
   .toLowerCase()
   .trim();
 
 // Simple password validation for LOGIN - no length restrictions
-export const LoginPasswordSchema = z.string().min(1, 'Password is required'); // Only require non-empty - server validates credentials
+export const LoginPasswordSchema = z.string().min(1, 'Password is required.'); // Only require non-empty - server validates credentials
 
 // Strict password validation for REGISTRATION
 export const RegisterPasswordSchema = z
   .string()
-  .min(1, 'Password is required')
+  .min(1, 'Password is required.')
   .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password must be less than 128 characters')
   .regex(
