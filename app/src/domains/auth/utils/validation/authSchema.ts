@@ -10,9 +10,9 @@ import { z } from 'zod';
 export const EmailSchema = z
   .email({
     error: (iss) =>
-      iss.input === undefined
+      iss.input === undefined || iss.input === ''
         ? `Email is required.`
-        : 'Please enter a valid email address',
+        : `Please enter a valid email address`,
   })
   .toLowerCase()
   .trim();
