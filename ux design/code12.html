@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Paperwurks - To-Do List</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+    :root {
+      --primary-color: #1173d4;
+      --secondary-color: #e7edf3;
+      --background-color: #f8fafc;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .checkbox-custom:checked {
+      background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    }
+  </style>
+</head>
+<body class="bg-[var(--background-color)] text-[var(--text-primary)]">
+<div class="flex min-h-screen flex-col">
+<header class="sticky top-0 z-10 bg-white shadow-sm">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex h-16 items-center justify-between">
+<div class="flex items-center gap-4">
+<svg class="h-8 w-8 text-[var(--primary-color)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_330)">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</g>
+<defs>
+<clipPath id="clip0_6_330"><rect fill="white" height="48" width="48"></rect></clipPath>
+</defs>
+</svg>
+<h1 class="text-xl font-bold tracking-tight text-slate-800">Paperwurks</h1>
+</div>
+<nav class="hidden items-center gap-6 md:flex">
+<a class="text-sm font-medium text-slate-600 hover:text-[var(--primary-color)] transition-colors" href="#">My Properties</a>
+<a class="text-sm font-medium text-slate-600 hover:text-[var(--primary-color)] transition-colors" href="#">My Account</a>
+<a class="inline-flex items-center justify-center rounded-md bg-[var(--secondary-color)] px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors" href="#">
+              Help
+            </a>
+</nav>
+<button class="md:hidden rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-600">
+<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16m-7 6h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-grow">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="mx-auto max-w-3xl">
+<div class="mb-8 text-center">
+<h2 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Complete Your Paperwurks Pack</h2>
+<p class="mt-2 text-lg text-[var(--text-secondary)]">Follow the steps below to prepare your property for sale.</p>
+</div>
+<div class="mb-8">
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-medium text-[var(--text-secondary)]">Progress</span>
+<span class="text-sm font-bold text-[var(--primary-color)]">60% Complete</span>
+</div>
+<div class="w-full bg-slate-200 rounded-full h-2.5">
+<div class="bg-[var(--primary-color)] h-2.5 rounded-full" style="width: 60%"></div>
+</div>
+</div>
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+<div class="p-6">
+<h3 class="text-lg font-semibold leading-6 text-slate-900">To-Do List</h3>
+</div>
+<ul class="divide-y divide-[var(--border-color)]" role="list">
+<li class="p-6 hover:bg-slate-50 transition-colors group">
+<label class="flex items-center cursor-pointer">
+<input checked="" class="checkbox-custom h-5 w-5 rounded border-[var(--border-color)] border-2 text-[var(--primary-color)] focus:ring-[var(--primary-color)] focus:ring-offset-0 transition" type="checkbox"/>
+<span class="ml-4 flex-grow text-base font-medium text-slate-700">Upload EPC</span>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity ml-4 rounded-md bg-[var(--primary-color)] px-3 py-1 text-sm font-semibold text-white shadow-sm hover:bg-blue-600">
+                    Upload
+                  </button>
+</label>
+</li>
+<li class="p-6 hover:bg-slate-50 transition-colors group">
+<label class="flex items-center cursor-pointer">
+<input checked="" class="checkbox-custom h-5 w-5 rounded border-[var(--border-color)] border-2 text-[var(--primary-color)] focus:ring-[var(--primary-color)] focus:ring-offset-0 transition" type="checkbox"/>
+<span class="ml-4 flex-grow text-base font-medium text-slate-700">Confirm Boundary Information</span>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity ml-4 rounded-md bg-[var(--primary-color)] px-3 py-1 text-sm font-semibold text-white shadow-sm hover:bg-blue-600">
+                    Confirm
+                  </button>
+</label>
+</li>
+<li class="p-6 hover:bg-slate-50 transition-colors group">
+<label class="flex items-center cursor-pointer">
+<input checked="" class="checkbox-custom h-5 w-5 rounded border-[var(--border-color)] border-2 text-[var(--primary-color)] focus:ring-[var(--primary-color)] focus:ring-offset-0 transition" type="checkbox"/>
+<span class="ml-4 flex-grow text-base font-medium text-slate-700">Answer Property Questionnaire</span>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity ml-4 rounded-md bg-[var(--primary-color)] px-3 py-1 text-sm font-semibold text-white shadow-sm hover:bg-blue-600">
+                    Start
+                  </button>
+</label>
+</li>
+<li class="p-6 hover:bg-slate-50 transition-colors group">
+<label class="flex items-center cursor-pointer">
+<input class="checkbox-custom h-5 w-5 rounded border-[var(--border-color)] border-2 text-[var(--primary-color)] focus:ring-[var(--primary-color)] focus:ring-offset-0 transition" type="checkbox"/>
+<span class="ml-4 flex-grow text-base font-medium text-slate-700">Provide Proof of Ownership</span>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity ml-4 rounded-md bg-[var(--primary-color)] px-3 py-1 text-sm font-semibold text-white shadow-sm hover:bg-blue-600">
+                    Upload
+                  </button>
+</label>
+</li>
+<li class="p-6 hover:bg-slate-50 transition-colors group">
+<label class="flex items-center cursor-pointer">
+<input class="checkbox-custom h-5 w-5 rounded border-[var(--border-color)] border-2 text-[var(--primary-color)] focus:ring-[var(--primary-color)] focus:ring-offset-0 transition" type="checkbox"/>
+<span class="ml-4 flex-grow text-base font-medium text-slate-700">Review and Submit</span>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity ml-4 rounded-md bg-slate-500 px-3 py-1 text-sm font-semibold text-white shadow-sm" disabled="">
+                    Review
+                  </button>
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+<footer class="bg-white border-t border-[var(--border-color)]">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="text-center text-sm text-[var(--text-secondary)]">
+          © 2024 Paperwurks. All rights reserved.
+        </div>
+</div>
+</footer>
+</div>
+
+</body></html>
