@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Paperwurks - Secure Sharing</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+      :root {
+        --primary-color: #1173d4;
+        --primary-color-hover: #0e5eac;
+        --border-color: #e2e8f0;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --background-color: #f8fafc;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--background-color);
+      }
+      .btn-primary {
+        @apply bg-[var(--primary-color)] text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300;
+      }
+      .btn-primary:hover {
+        @apply bg-[var(--primary-color-hover)];
+      }
+    </style>
+</head>
+<body class="text-[var(--text-primary)]">
+<div class="flex flex-col min-h-screen">
+<header class="bg-white shadow-sm sticky top-0 z-10">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-4">
+<svg class="h-8 w-8 text-[var(--primary-color)]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"> <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path> <polyline points="14 2 14 8 20 8"></polyline> <line x1="16" x2="8" y1="13" y2="13"></line> <line x1="16" x2="8" y1="17" y2="17"></line> <polyline points="10 9 9 9 8 9"></polyline></svg>
+<h1 class="text-xl font-bold tracking-tight text-slate-800">Paperwurks</h1>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium text-slate-600 hover:text-[var(--primary-color)] transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)] pb-1" href="#">My Properties</a>
+<a class="text-sm font-medium text-slate-600 hover:text-[var(--primary-color)] transition-colors" href="#">Help</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="relative">
+<button class="relative z-10 block h-10 w-10 rounded-full overflow-hidden border-2 border-transparent focus:outline-none focus:border-[var(--primary-color)]">
+<img alt="User Avatar" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsAMWoo4-BfQbvjh7Z0NW44S--sBgIKcVVUy90PSYfvwunBiLNEtF-tqNOcueCRP40GTFQzsV8I9hvvTf_gJqsDcezeIFPn21LooizsT55D3j6_lrILHmvIrjvbO5AbbWvlQOfdu3yuIWo3z4GCS_WNlHBaMskL5BJDM9Cmmx5oAPm25muv5us9wjCaGWG61RjqxM7yikxNPSbIc5NuhLstQVP1jBo8_gTALYF8Qs60cawQnW1m32b9mOkhJqNkyoaa922gyhXdsx5"/>
+</button>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-4xl mx-auto">
+<div class="mb-6">
+<nav aria-label="Breadcrumb" class="flex">
+<ol class="flex items-center space-x-2 text-sm" role="list">
+<li>
+<div>
+<a class="text-slate-500 hover:text-slate-700" href="#">My Properties</a>
+</div>
+</li>
+<li>
+<div class="flex items-center">
+<svg aria-hidden="true" class="h-5 w-5 flex-shrink-0 text-slate-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z"></path>
+</svg>
+<span class="ml-2 text-slate-800 font-medium">123 High Street</span>
+</div>
+</li>
+</ol>
+</nav>
+</div>
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+<div class="p-6 border-b border-[var(--border-color)]">
+<h2 class="text-2xl font-bold text-slate-900">123 High Street, London, W1 1AA</h2>
+<p class="mt-1 text-[var(--text-secondary)]">Secure Sharing</p>
+</div>
+<div class="p-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold text-slate-800">Shared With</h3>
+<div class="flex items-center text-sm text-[var(--text-secondary)]">
+<svg aria-hidden="true" class="h-4 w-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5H10.75V5z" fill-rule="evenodd"></path>
+</svg>
+<span>Last updated 2 days ago</span>
+</div>
+</div>
+<ul class="space-y-4">
+<li class="flex items-start gap-4 p-4 bg-slate-50 rounded-lg">
+<img alt="Jane Doe Avatar" class="h-12 w-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBc0n7sa3AXHxIWOuGsIppBY1WwqTJSUpr2FKRHN4pWsqjUUJlpCN8N_WGlGk9KaooNr6IiCKFPVTslFzjEXWCEBl-NV9wnOJ_S8AnlJisMUq1hn6W4PIqKIAHM7Aox0xe7lo-Rf8LjSzSm08fHiFiEWS1KsHDp60AckuI6WAHCHYW9Qf7vEmr_Hqd1HbiPXgYAvTIO04CuU-xmbK884sml6YXEN3Ct8W69zoYgxXnnQLglj9qea3CB21vHmGVRKiMn-QYEXIDb6gA2"/>
+<div class="flex-grow">
+<p class="font-semibold text-slate-900">Jane Doe</p>
+<p class="text-[var(--text-secondary)] text-sm">Solicitor at ABC Law Firm</p>
+<p class="text-xs text-slate-400 mt-1">Shared by your agent, John Appleseed</p>
+</div>
+<div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+<svg aria-hidden="true" class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" fill-rule="evenodd"></path>
+</svg>
+<span>Viewed</span>
+</div>
+</li>
+<li class="flex items-start gap-4 p-4 bg-slate-50 rounded-lg">
+<div class="h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center">
+<svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M2.25 13.5h3.86a2.25 2.25 0 012.25 2.25v3.86a2.25 2.25 0 002.25 2.25h3.86a2.25 2.25 0 002.25-2.25v-3.86a2.25 2.25 0 012.25-2.25h3.86m-16.5 0a2.25 2.25 0 00-2.25 2.25v3.86a2.25 2.25 0 01-2.25 2.25H2.25m16.5 0a2.25 2.25 0 012.25 2.25v3.86a2.25 2.25 0 002.25 2.25h-3.86a2.25 2.25 0 00-2.25-2.25v-3.86a2.25 2.25 0 01-2.25-2.25h-3.86m-6.75 0h3.86a2.25 2.25 0 012.25 2.25v3.86a2.25 2.25 0 002.25 2.25h3.86a2.25 2.25 0 002.25-2.25v-3.86a2.25 2.25 0 012.25-2.25h3.86" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex-grow">
+<p class="font-semibold text-slate-900">Prospective Buyer via Agent</p>
+<p class="text-[var(--text-secondary)] text-sm">Anonymous viewing link</p>
+<p class="text-xs text-slate-400 mt-1">Shared by your agent, John Appleseed</p>
+</div>
+<div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+<svg aria-hidden="true" class="h-4 w-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"></path>
+<path clip-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.18l.88-1.467a1.65 1.65 0 011.65-.88l1.467.88a1.65 1.65 0 01.88 1.65l-.88 1.467a1.65 1.65 0 01-1.65.88l-1.467-.88a1.65 1.65 0 01-.88-1.65l.88-1.467zM16.666 10.59a1.651 1.651 0 010-1.18l.88-1.467a1.65 1.65 0 011.65-.88l1.467.88a1.65 1.65 0 01.88 1.65l-.88 1.467a1.65 1.65 0 01-1.65.88l-1.467-.88a1.65 1.65 0 01-.88-1.65l.88-1.467z" fill-rule="evenodd"></path>
+</svg>
+<span>Not viewed</span>
+</div>
+</li>
+</ul>
+<div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-lg">
+<div class="flex">
+<div class="flex-shrink-0">
+<svg aria-hidden="true" class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="ml-3">
+<p class="text-sm">Your agent controls who can access this pack. If you need to share it with someone new, please contact your agent.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="bg-white mt-auto">
+<div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center text-sm text-[var(--text-secondary)]">
+<p>© 2024 Paperwurks. All rights reserved.</p>
+<div class="flex gap-4">
+<a class="hover:text-[var(--primary-color)]" href="#">Terms of Service</a>
+<a class="hover:text-[var(--primary-color)]" href="#">Privacy Policy</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>

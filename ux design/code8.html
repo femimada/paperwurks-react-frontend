@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<title>Paperwurks - Property Owner Dashboard</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+      :root {
+        --primary-color: #1173d4;
+        --secondary-color: #f0f7ff;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+        --background-color: #f8fafc;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--background-color);
+      }
+      .nav-link {
+        @apply text-sm font-medium text-[var(--text-primary)] hover:text-[var(--primary-color)] transition-colors;
+      }
+      .btn-primary {
+        @apply bg-[var(--primary-color)] text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)];
+      }
+    </style>
+</head>
+<body>
+<div class="flex min-h-screen flex-col text-[var(--text-primary)]">
+<header class="sticky top-0 z-10 w-full border-b border-[var(--border-color)] bg-white/80 backdrop-blur-md">
+<div class="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
+<div class="flex items-center gap-4">
+<svg class="h-8 w-8 text-[var(--primary-color)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_330)">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</g>
+<defs>
+<clipPath id="clip0_6_330"><rect fill="white" height="48" width="48"></rect></clipPath>
+</defs>
+</svg>
+<h1 class="text-xl font-bold tracking-tight">Paperwurks</h1>
+</div>
+<nav class="hidden items-center gap-8 md:flex">
+<a class="nav-link" href="#">Dashboard</a>
+<a class="nav-link font-bold text-[var(--primary-color)]" href="#">Properties</a>
+<a class="nav-link" href="#">Support</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="relative rounded-full p-2 hover:bg-gray-100">
+<span class="material-icons text-gray-600">notifications</span>
+<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
+</button>
+<img alt="User Avatar" class="h-10 w-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM4gZnHkJg9qpxuflaoOy_aQVfU55_PVM2o-ME8hl7qt5bc2dHn0MgDTWeBWimvFuIjmVsNKr-5S68gLD4k3h3f3eFOmlvlTKLzYamzrAZLyPf8FXwsZ5wL5Wc18T0a4aDQvsmWVRmf_YuCkdAb3d9VZywIKgzsDXXRuxfC-57xZhvx7EfNdlOurK57_OFnRCf9J21j3vqwYK6raRn5Oau3-DIPSbeUJIpJo9gFvfvc_kXqWXymG0iHauaC2nwS2IgT4cwgVQW2HUr"/>
+</div>
+</div>
+</header>
+<main class="flex-grow">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+<div class="mb-8">
+<h2 class="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Property Owner Management</h2>
+<p class="mt-2 text-[var(--text-secondary)]">Manage your agent and solicitor, and track the progress of your property's due diligence process.</p>
+</div>
+<div class="grid grid-cols-1 gap-12 lg:grid-cols-3">
+<div class="lg:col-span-1">
+<div class="space-y-8">
+<div class="rounded-md border border-[var(--border-color)] bg-white p-6 shadow-sm">
+<h3 class="text-lg font-semibold leading-6 text-[var(--text-primary)]">Manage Agent</h3>
+<p class="mt-1 text-sm text-[var(--text-secondary)]">Add or change your estate agent.</p>
+<div class="mt-4">
+<label class="sr-only" for="agent-search">Search for Agent</label>
+<div class="relative">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-icons text-gray-400">search</span>
+</div>
+<input class="block w-full rounded-md border-gray-300 pl-10 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] sm:text-sm" id="agent-search" name="agent-search" placeholder="Enter agent name or firm" type="search"/>
+</div>
+</div>
+<div class="mt-4 flex justify-end">
+<button class="btn-primary text-sm" type="button">Add Agent</button>
+</div>
+</div>
+<div class="rounded-md border border-[var(--border-color)] bg-white p-6 shadow-sm">
+<h3 class="text-lg font-semibold leading-6 text-[var(--text-primary)]">Manage Solicitor</h3>
+<p class="mt-1 text-sm text-[var(--text-secondary)]">Add or change your solicitor.</p>
+<div class="mt-4">
+<label class="sr-only" for="solicitor-search">Search for Solicitor</label>
+<div class="relative">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-icons text-gray-400">search</span>
+</div>
+<input class="block w-full rounded-md border-gray-300 pl-10 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] sm:text-sm" id="solicitor-search" name="solicitor-search" placeholder="Enter solicitor name or firm" type="search"/>
+</div>
+</div>
+<div class="mt-4 flex justify-end">
+<button class="btn-primary text-sm" type="button">Add Solicitor</button>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-2">
+<div class="rounded-md border border-[var(--border-color)] bg-white shadow-sm">
+<div class="border-b border-[var(--border-color)] p-6">
+<h3 class="text-lg font-semibold leading-6 text-[var(--text-primary)]">Event Timeline</h3>
+<p class="mt-1 text-sm text-[var(--text-secondary)]">Key actions and updates from your agent and solicitor.</p>
+</div>
+<div class="p-6">
+<ol class="relative border-l border-gray-200">
+<li class="mb-10 ml-6">
+<span class="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--secondary-color)] ring-8 ring-white">
+<span class="material-icons text-[var(--primary-color)]">inventory_2</span>
+</span>
+<div class="ml-4">
+<h4 class="text-base font-semibold text-[var(--text-primary)]">Pack ordered</h4>
+<p class="text-sm text-[var(--text-secondary)]">Agent: Sarah Jones</p>
+<time class="mb-1 text-sm font-normal leading-none text-gray-400">12th April 2023</time>
+</div>
+</li>
+<li class="mb-10 ml-6">
+<span class="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--secondary-color)] ring-8 ring-white">
+<span class="material-icons text-[var(--primary-color)]">share</span>
+</span>
+<div class="ml-4">
+<h4 class="text-base font-semibold text-[var(--text-primary)]">Shared with buyer 1</h4>
+<p class="text-sm text-[var(--text-secondary)]">Agent: Sarah Jones</p>
+<time class="mb-1 text-sm font-normal leading-none text-gray-400">14th April 2023</time>
+</div>
+</li>
+<li class="mb-10 ml-6">
+<span class="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--secondary-color)] ring-8 ring-white">
+<span class="material-icons text-[var(--primary-color)]">gavel</span>
+</span>
+<div class="ml-4">
+<h4 class="text-base font-semibold text-[var(--text-primary)]">Legal searches initiated</h4>
+<p class="text-sm text-[var(--text-secondary)]">Solicitor: David Miller</p>
+<time class="mb-1 text-sm font-normal leading-none text-gray-400">15th April 2023</time>
+</div>
+</li>
+<li class="mb-10 ml-6">
+<span class="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--secondary-color)] ring-8 ring-white">
+<span class="material-icons text-[var(--primary-color)]">checklist</span>
+</span>
+<div class="ml-4">
+<h4 class="text-base font-semibold text-[var(--text-primary)]">Risk assessment complete</h4>
+<p class="text-sm text-[var(--text-secondary)]">Solicitor: David Miller</p>
+<time class="mb-1 text-sm font-normal leading-none text-gray-400">20th April 2023</time>
+</div>
+</li>
+<li class="ml-6">
+<span class="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full bg-green-100 ring-8 ring-white">
+<span class="material-icons text-green-600">done</span>
+</span>
+<div class="ml-4">
+<h4 class="text-base font-semibold text-[var(--text-primary)]">Ready for exchange</h4>
+<p class="text-sm text-[var(--text-secondary)]">Solicitor: David Miller</p>
+<time class="mb-1 text-sm font-normal leading-none text-gray-400">22nd April 2023</time>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto border-t border-[var(--border-color)] bg-white">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-[var(--text-secondary)]">
+<p>© 2023 Paperwurks. All rights reserved.</p>
+</div>
+</footer>
+</div>
+
+</body></html>

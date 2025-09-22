@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Paperwurks - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+      :root {
+        --brand-primary: #1173d4;
+        --brand-secondary: #0d141b;
+        --brand-background: #f8fafc;
+        --brand-surface: #ffffff;
+        --brand-border: #e2e8f0;
+        --brand-text-primary: #0d141b;
+        --brand-text-secondary: #64748b;
+        --brand-text-placeholder: #94a3b8;
+        --brand-action: #1173d4;
+        --brand-action-hover: #0f63b8;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--brand-background);
+      }
+      .logo-icon {
+        color: var(--brand-primary);
+      }
+    </style>
+</head>
+<body class="text-[var(--brand-text-primary)]">
+<div class="flex flex-col min-h-screen">
+<header class="bg-[var(--brand-surface)] border-b border-[var(--brand-border)]">
+<nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+<a class="flex items-center gap-3" href="#">
+<div class="size-8 logo-icon">
+<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_330)">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</g>
+<defs>
+<clipPath id="clip0_6_330">
+<rect fill="white" height="48" width="48"></rect>
+</clipPath>
+</defs>
+</svg>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Paperwurks</h1>
+</a>
+</nav>
+</header>
+<main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<div class="w-full max-w-md space-y-8 bg-[var(--brand-surface)] p-10 rounded-xl shadow-lg border border-[var(--brand-border)]">
+<div>
+<h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-[var(--brand-text-primary)]">Sign in to your account</h2>
+<p class="mt-2 text-center text-sm text-[var(--brand-text-secondary)]">Empowering sellers, agents, and buyers.</p>
+</div>
+<form action="#" class="mt-8 space-y-6" method="POST">
+<div class="rounded-md shadow-sm -space-y-px">
+<div>
+<label class="sr-only" for="email-address">Email or Username</label>
+<input autocomplete="email" class="appearance-none rounded-none relative block w-full px-3 py-4 border border-[var(--brand-border)] placeholder-[var(--brand-text-placeholder)] text-[var(--brand-text-primary)] rounded-t-md focus:outline-none focus:ring-[var(--brand-action)] focus:border-[var(--brand-action)] focus:z-10 sm:text-sm" id="email-address" name="email" placeholder="Email or Username" required="" type="email"/>
+</div>
+<div>
+<label class="sr-only" for="password">Password</label>
+<input autocomplete="current-password" class="appearance-none rounded-none relative block w-full px-3 py-4 border border-[var(--brand-border)] placeholder-[var(--brand-text-placeholder)] text-[var(--brand-text-primary)] rounded-b-md focus:outline-none focus:ring-[var(--brand-action)] focus:border-[var(--brand-action)] focus:z-10 sm:text-sm" id="password" name="password" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center">
+<input class="h-4 w-4 text-[var(--brand-action)] focus:ring-[var(--brand-action)] border-[var(--brand-border)] rounded" id="remember-me" name="remember-me" type="checkbox"/>
+<label class="ml-2 block text-sm text-[var(--brand-text-secondary)]" for="remember-me"> Remember me </label>
+</div>
+<div class="text-sm">
+<a class="font-medium text-[var(--brand-action)] hover:text-[var(--brand-action-hover)]" href="#"> Forgot your password? </a>
+</div>
+</div>
+<div>
+<button class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[var(--brand-action)] hover:bg-[var(--brand-action-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-action)]" type="submit">
+                Sign in
+              </button>
+</div>
+</form>
+<div class="text-sm text-center">
+<p class="text-[var(--brand-text-secondary)]">
+              Don't have an account?
+              <a class="font-medium text-[var(--brand-action)] hover:text-[var(--brand-action-hover)]" href="#"> Sign Up </a>
+</p>
+</div>
+</div>
+</main>
+</div>
+
+
+</body></html>

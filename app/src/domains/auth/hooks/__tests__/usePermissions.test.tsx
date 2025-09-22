@@ -4,7 +4,7 @@ import { renderHook } from '@testing-library/react';
 import { usePermissions } from '../usePermissions';
 import { useAuth } from '../useAuth';
 import type { User } from '@/domains/auth/types';
-import type { Permission, UserRole } from '@/shared/types/global.types';
+import type { UserRole, Permission } from '@/shared/types/global.types';
 
 // Mock useAuth hook
 vi.mock('../useAuth');
@@ -14,11 +14,11 @@ const mockUseAuth = vi.mocked(useAuth);
 vi.mock('@/shared/constants/roles', () => ({
   ROLE_PERMISSIONS: {
     buyer: ['property:read'],
-    owner: ['property:read', 'property:write'],
-    solicitor: ['property:read', 'property:write', 'document:review'],
+    owner: ['property:read', 'property:create'],
+    solicitor: ['property:read', 'property:create', 'document:read'],
     agent: [
       'property:read',
-      'property:write',
+      'property:create',
       'property:manage',
       'user:manage',
     ],
@@ -32,7 +32,7 @@ describe('usePermissions', () => {
     firstName: 'Test',
     lastName: 'User',
     role: 'owner',
-    permissions: ['property:read', 'property:create'],
+    permissions: ['property:read', 'property:create'] as Permission[],
     profile: { phone: '', bio: '' },
     isEmailVerified: true,
     createdAt: new Date(),
@@ -45,11 +45,13 @@ describe('usePermissions', () => {
     // Default useAuth mock
     mockUseAuth.mockReturnValue({
       user: mockUser,
-      permissions: ['property:read', 'property:create'],
-      hasPermission: vi.fn((perm) => mockUser.permissions.includes(perm)),
-      hasRole: vi.fn((role) => mockUser.role === role),
-      hasAnyPermission: vi.fn((perms) =>
-        perms.some((p) => mockUser.permissions.includes(p))
+      permissions: ['property:read', 'property:create'] as Permission[],
+      hasPermission: vi.fn((perm: Permission) =>
+        mockUser.permissions.includes(perm)
+      ),
+      hasRole: vi.fn((role: string) => mockUser.role === role),
+      hasAnyPermission: vi.fn((perms: Permission[]) =>
+        perms.some((p: Permission) => mockUser.permissions.includes(p))
       ),
       isAuthenticated: true,
       isLoading: false,
@@ -89,16 +91,16 @@ describe('usePermissions', () => {
       ]);
       expect(result.current.getRolePermissions('owner')).toEqual([
         'property:read',
-        'property:write',
+        'property:create',
       ]);
       expect(result.current.getRolePermissions('solicitor')).toEqual([
         'property:read',
-        'property:write',
-        'document:review',
+        'property:create',
+        'document:read',
       ]);
       expect(result.current.getRolePermissions('agent')).toEqual([
         'property:read',
-        'property:write',
+        'property:create',
         'property:manage',
         'user:manage',
       ]);
@@ -127,7 +129,6 @@ describe('usePermissions', () => {
     it('should return false when user is missing some permissions', () => {
       const { result } = renderHook(() => usePermissions());
 
-      expect(result.current.hasAllPermissions(['property:read'])).toBe(false);
       expect(result.current.hasAllPermissions(['user:manage'])).toBe(false);
     });
   });
@@ -166,16 +167,16 @@ describe('usePermissions', () => {
 
       const checkResult = result.current.checkPermission([
         'user:manage',
-        'property:read',
+        'document:read',
       ]);
 
       expect(checkResult.granted).toBe(false);
       expect(checkResult.reason).toBe(
-        'Missing permissions: user:manage, document:review'
+        'Missing permissions: user:manage, document:read'
       );
       expect(checkResult.missingPermissions).toEqual([
         'user:manage',
-        'document:review',
+        'document:read',
       ]);
     });
   });
@@ -185,6 +186,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: { ...mockUser, role: 'agent' },
+        permissions: ['property:read'] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -199,7 +201,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: { ...mockUser, role: 'buyer' },
-        permissions: ['property:read'],
+        permissions: ['property:read'] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -225,7 +227,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: null,
-        permissions: [],
+        permissions: [] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -236,18 +238,18 @@ describe('usePermissions', () => {
 
   describe('effectivePermissions', () => {
     it('should combine role permissions and user permissions', () => {
-      // User has owner role permissions + additional document:review permission
+      // User has owner role permissions + additional document:read permission
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
-        permissions: ['property:read', 'property:create'],
+        permissions: ['property:read', 'property:create'] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
 
       const effective = result.current.effectivePermissions;
       expect(effective).toContain('property:read');
-      expect(effective).toContain('property:write');
-      expect(effective).toContain('document:review');
+      expect(effective).toContain('property:create');
+      expect(effective).toContain('document:read');
       expect(effective.length).toBe(3); // No duplicates
     });
 
@@ -256,7 +258,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: { ...mockUser, role: 'owner' },
-        permissions: ['property:read', 'property:create'], // Same as role permissions
+        permissions: ['property:read', 'property:create'] as Permission[], // Same as role permissions
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -270,7 +272,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: null,
-        permissions: [],
+        permissions: [] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -284,7 +286,11 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: { ...mockUser, role: 'owner' },
-        permissions: ['property:read', 'property:create', 'user:manage'], // user:manage is beyond owner role
+        permissions: [
+          'property:read',
+          'property:create',
+          'user:manage',
+        ] as Permission[], // user:manage is beyond owner role
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -296,7 +302,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: { ...mockUser, role: 'owner' },
-        permissions: ['property:read', 'property:create'], // Exactly owner role permissions
+        permissions: ['property:read', 'property:create'] as Permission[], // Exactly owner role permissions
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -308,7 +314,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: { ...mockUser, role: 'owner' },
-        permissions: ['property:read'], // Less than owner role permissions
+        permissions: ['property:read'] as Permission[], // Less than owner role permissions
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -320,7 +326,7 @@ describe('usePermissions', () => {
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
         user: null,
-        permissions: [],
+        permissions: [] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -350,10 +356,10 @@ describe('usePermissions', () => {
         ...mockUseAuth(),
         permissions: [
           'property:read',
-          'property:write',
-          'document:review',
+          'property:create',
+          'document:read',
           'user:manage',
-        ],
+        ] as Permission[],
       });
 
       const { result } = renderHook(() => usePermissions());
@@ -370,7 +376,7 @@ describe('usePermissions', () => {
       expect(result.current.currentRole).toBe('owner');
       expect(result.current.currentPermissions).toEqual([
         'property:read',
-        'property:write',
+        'property:create',
       ]);
     });
 
@@ -411,7 +417,11 @@ describe('usePermissions', () => {
       // Change user permissions
       mockUseAuth.mockReturnValue({
         ...mockUseAuth(),
-        permissions: ['property:read', 'property:write', 'document:review'],
+        permissions: [
+          'property:read',
+          'property:create',
+          'document:read',
+        ] as Permission[],
       });
 
       rerender();
@@ -419,7 +429,7 @@ describe('usePermissions', () => {
       expect(result.current.effectivePermissions).not.toBe(
         firstEffectivePermissions
       );
-      expect(result.current.effectivePermissions).toContain('document:review');
+      expect(result.current.effectivePermissions).toContain('document:read');
     });
   });
 });

@@ -15,9 +15,15 @@ export interface UseLoginReturn {
   onSubmit: (data: LoginFormData) => Promise<void>;
   isSubmitting: boolean;
   form: ReturnType<typeof useForm<LoginFormData>>;
+  error: string | null; // Added to expose error to UI
+}
+export interface UseLoginOptions {
+  defaultRedirect?: string; // Configurable default route
+  loginTimeout?: number; // Timeout for stale login attempts
 }
 
-export const useLogin = (): UseLoginReturn => {
+export const useLogin = (options: UseLoginOptions = {}): UseLoginReturn => {
+  const { defaultRedirect = '/dashboard', loginTimeout = 30000 } = options;
   const { login, clearError, error, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,10 +44,26 @@ export const useLogin = (): UseLoginReturn => {
     },
   });
 
-  const from = useMemo(
-    () => location.state?.from?.pathname || '/dashboard',
-    [location.state?.from?.pathname]
-  );
+  const from = useMemo(() => {
+    try {
+      return location.state?.from?.pathname || defaultRedirect;
+    } catch {
+      return defaultRedirect;
+    }
+  }, [location.state, defaultRedirect]);
+
+  useEffect(() => {
+    if (!lastLoginAttempt) return;
+
+    const timeout = setTimeout(() => {
+      setLastLoginAttempt(null);
+      logger.warn('Cleared stale login attempt', {
+        email: lastLoginAttempt.email.replace(/@.*/, '@[redacted]'),
+      });
+    }, loginTimeout);
+
+    return () => clearTimeout(timeout);
+  }, [lastLoginAttempt, loginTimeout]);
 
   // Handle auth state changes after login attempts
   useEffect(() => {
@@ -68,30 +90,25 @@ export const useLogin = (): UseLoginReturn => {
 
   const onSubmit = useCallback(
     async (data: LoginFormData): Promise<void> => {
+      if (isSubmitting) return;
       setIsSubmitting(true);
 
       try {
         const sanitizedEmail = data.email.replace(/@.*/, '@[redacted]');
         logger.debug('Login attempt started', { email: sanitizedEmail });
 
-        // Track this login attempt
         setLastLoginAttempt({
           email: data.email,
           timestamp: Date.now(),
         });
 
-        // Clear any previous errors
         clearError();
-
         // Attempt login - AuthContext will handle success/error state updates
         await login({
           email: data.email,
           password: data.password,
           rememberMe: data.rememberMe ?? false,
         });
-
-        // Note: Success/error handling is now in useEffect above
-        // which responds to auth context state changes
       } catch (unexpectedError) {
         // This should only catch unexpected errors since AuthContext login doesn't throw
         logger.error('Unexpected login error', {
@@ -105,12 +122,13 @@ export const useLogin = (): UseLoginReturn => {
         setIsSubmitting(false);
       }
     },
-    [login, clearError]
+    [login, clearError, isSubmitting]
   );
 
   return {
     onSubmit,
     isSubmitting,
     form,
+    error,
   };
 };

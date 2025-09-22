@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Paperwurks - Document Uploader</title>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+    :root {
+      --brand-primary: #1173d4;
+      --brand-secondary: #e7edf3;
+      --text-primary: #0d141b;
+      --text-secondary: #4c739a;
+      --background-primary: #ffffff;
+      --background-secondary: #f8fafc;
+      --border-color: #cfdbe7;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .status-badge {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    }
+    .status-uploaded {
+        @apply bg-green-100 text-green-800;
+    }
+    .status-pending {
+        @apply bg-yellow-100 text-yellow-800;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background-secondary)] text-[var(--text-primary)]">
+<div class="relative flex size-full min-h-screen flex-col">
+<header class="sticky top-0 z-10 bg-[var(--background-primary)] shadow-sm">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex h-16 items-center justify-between">
+<div class="flex items-center gap-4">
+<svg class="h-8 w-8 text-[var(--brand-primary)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_330)">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</g>
+<defs>
+<clipPath id="clip0_6_330"><rect fill="white" height="48" width="48"></rect></clipPath>
+</defs>
+</svg>
+<h1 class="text-xl font-bold tracking-tight">Paperwurks</h1>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors" href="#">My Properties</a>
+<a class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors" href="#">My Profile</a>
+<a class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors" href="#">Help</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="relative rounded-full p-2 text-[var(--text-secondary)] hover:bg-[var(--brand-secondary)] hover:text-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-primary)]">
+<span class="sr-only">View notifications</span>
+<svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path></svg>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCKUFxRIN1rqBDNE3vWO3mULnHG0g8dlHp-o-4lBeYpVasnYRpL1rGVDoBKPykOyZiguEMhw5WhtPNRudC7oMwcHkq0EFxXkzKoH5ovF3omz8hEvThRuN4oLjazWE57dRRAxhqUygyBxV6-WGdizuDBC2sSL_tXhvvaZEoOHuLukksQxdPZcohahMgmfT6CWfZwbPGXOfbmQIdFDRF74tyTBl-qh6k0vQwnHAXGcv9652W-5eJrCq-sZ1V5Wt6RkaOF025KxeuoaaSW");'></div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-4xl mx-auto">
+<div class="mb-6">
+<nav aria-label="Breadcrumb" class="flex">
+<ol class="flex items-center space-x-2 text-sm" role="list">
+<li>
+<a class="text-[var(--text-secondary)] hover:text-[var(--brand-primary)]" href="#">My Properties</a>
+</li>
+<li>
+<div class="flex items-center">
+<svg aria-hidden="true" class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z"></path></svg>
+<span class="ml-2 text-[var(--text-primary)] font-medium">123 High Street</span>
+</div>
+</li>
+</ol>
+</nav>
+</div>
+<div class="text-center mb-8">
+<h2 class="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">Document Uploader</h2>
+<p class="mt-4 text-lg text-[var(--text-secondary)]">Securely upload the necessary documents for your property. Your privacy and security are our top priority.</p>
+</div>
+<div class="bg-[var(--background-primary)] rounded-lg shadow-md p-6 md:p-8 mb-8">
+<div class="mb-6">
+<h3 class="text-lg font-semibold leading-6 text-[var(--text-primary)]">Upload Your Files</h3>
+<p class="mt-1 text-sm text-[var(--text-secondary)]">Accepted formats: PDF, JPG, PNG. Maximum file size: 10MB.</p>
+</div>
+<div class="mt-2 flex justify-center rounded-lg border-2 border-dashed border-[var(--border-color)] px-6 py-10 transition-colors hover:border-[var(--brand-primary)]">
+<div class="text-center">
+<svg aria-hidden="true" class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+<path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<div class="mt-4 flex text-sm leading-6 text-gray-600">
+<label class="relative cursor-pointer rounded-md bg-white font-semibold text-[var(--brand-primary)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--brand-primary)] focus-within:ring-offset-2 hover:text-blue-500" for="file-upload">
+<span>Upload a file</span>
+<input class="sr-only" id="file-upload" name="file-upload" type="file"/>
+</label>
+<p class="pl-1">or drag and drop</p>
+</div>
+<p class="text-xs leading-5 text-gray-500">PNG, JPG, PDF up to 10MB</p>
+</div>
+</div>
+</div>
+<div class="bg-[var(--background-primary)] rounded-lg shadow-md">
+<div class="px-6 py-4 border-b border-[var(--border-color)]">
+<h3 class="text-lg font-semibold leading-6 text-[var(--text-primary)]">Uploaded Documents</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-[var(--border-color)]">
+<thead class="bg-gray-50">
+<tr>
+<th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-[var(--text-primary)] sm:pl-6" scope="col">Document Name</th>
+<th class="px-3 py-3.5 text-left text-sm font-semibold text-[var(--text-primary)]" scope="col">Status</th>
+<th class="relative py-3.5 pl-3 pr-4 sm:pr-6" scope="col">
+<span class="sr-only">Actions</span>
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[var(--border-color)] bg-white">
+<tr>
+<td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-[var(--text-primary)] sm:pl-6">Proof of Ownership</td>
+<td class="whitespace-nowrap px-3 py-4 text-sm text-[var(--text-secondary)]">
+<span class="status-badge status-uploaded">Uploaded</span>
+</td>
+<td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+<a class="text-[var(--brand-primary)] hover:text-blue-700" href="#">View</a>
+<a class="text-red-600 hover:text-red-800 ml-4" href="#">Delete</a>
+</td>
+</tr>
+<tr>
+<td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-[var(--text-primary)] sm:pl-6">Energy Performance Certificate (EPC)</td>
+<td class="whitespace-nowrap px-3 py-4 text-sm text-[var(--text-secondary)]">
+<span class="status-badge status-uploaded">Uploaded</span>
+</td>
+<td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+<a class="text-[var(--brand-primary)] hover:text-blue-700" href="#">View</a>
+<a class="text-red-600 hover:text-red-800 ml-4" href="#">Delete</a>
+</td>
+</tr>
+<tr>
+<td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-[var(--text-primary)] sm:pl-6">Leasehold Information (if applicable)</td>
+<td class="whitespace-nowrap px-3 py-4 text-sm text-[var(--text-secondary)]">
+<span class="status-badge status-pending">Pending Upload</span>
+</td>
+<td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+<button class="text-[var(--brand-primary)] hover:text-blue-700">Upload</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="mt-8 flex justify-end gap-4">
+<button class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-[var(--text-primary)] shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" type="button">Back</button>
+<button class="rounded-md bg-[var(--brand-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)]" type="submit">Save &amp; Continue</button>
+</div>
+</div>
+</main>
+<footer class="bg-[var(--background-primary)] border-t border-[var(--border-color)] mt-auto">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-[var(--text-secondary)]">
+<p>© 2024 Paperwurks. All rights reserved.</p>
+</div>
+</footer>
+</div>
+
+</body></html>

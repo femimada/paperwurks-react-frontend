@@ -5,6 +5,7 @@ import { useAuth } from '../useAuth';
 import { AuthContext } from '@/context/AuthContext';
 import type { AuthContextType } from '@/context/AuthContext';
 import type { ReactNode } from 'react';
+import type { Permission } from '@/shared/types/global.types';
 
 // Mock AuthContext value
 const createMockAuthContext = (
@@ -63,7 +64,7 @@ describe('useAuth', () => {
           firstName: 'Test',
           lastName: 'User',
           role: 'owner',
-          permissions: ['property:read'],
+          permissions: ['property:read'] as Permission[],
           profile: { phone: '', bio: '' },
           isEmailVerified: true,
           createdAt: new Date(),
@@ -109,7 +110,7 @@ describe('useAuth', () => {
         firstName: 'Test',
         lastName: 'User',
         role: 'agent' as const,
-        permissions: ['property:read', 'property:write'],
+        permissions: ['property:read', 'property:create'] as Permission[],
         profile: { phone: '+1234567890', bio: 'Test bio' },
         isEmailVerified: true,
         createdAt: new Date('2023-01-01'),
@@ -119,7 +120,7 @@ describe('useAuth', () => {
       const mockContext = createMockAuthContext({
         isAuthenticated: true,
         user: mockUser,
-        permissions: ['property:read', 'property:create'],
+        permissions: ['property:read', 'property:create'] as Permission[],
         isLoading: false,
         error: null,
       });
@@ -132,7 +133,7 @@ describe('useAuth', () => {
       expect(result.current.user).toEqual(mockUser);
       expect(result.current.permissions).toEqual([
         'property:read',
-        'property:write',
+        'property:create',
       ]);
     });
 
