@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B600%3B700&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Paperwurks - Pack Progress</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+      :root {
+        --brand-primary: #1173d4;
+        --brand-secondary: #e7edf3;
+        --text-primary: #0d141b;
+        --text-secondary: #4c739a;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f8fafc;
+        --border-primary: #e2e8f0;
+      }
+      body {
+        font-family: 'Inter', 'Noto Sans', sans-serif;
+      }
+    </style>
+</head>
+<body class="bg-surface-secondary">
+<div class="flex min-h-screen flex-col text-text-primary">
+<header class="sticky top-0 z-10 flex items-center justify-between border-b border-border-primary bg-surface-primary px-6 py-4 shadow-sm md:px-10">
+<div class="flex items-center gap-4">
+<div class="size-8 text-brand-primary">
+<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_330)">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</g>
+<defs>
+<clipPath id="clip0_6_330">
+<rect fill="white" height="48" width="48"></rect>
+</clipPath>
+</defs>
+</svg>
+</div>
+<h1 class="text-xl font-bold leading-tight tracking-tight">Paperwurks</h1>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden items-center gap-8 md:flex">
+<a class="text-sm font-medium text-text-secondary transition-colors hover:text-brand-primary" href="#">My Properties</a>
+<a class="text-sm font-medium text-text-secondary transition-colors hover:text-brand-primary" href="#">My Pack</a>
+<a class="text-sm font-medium text-text-secondary transition-colors hover:text-brand-primary" href="#">Help</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-secondary text-text-secondary transition-colors hover:bg-brand-secondary hover:text-brand-primary">
+<div data-icon="Bell" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path>
+</svg>
+</div>
+</button>
+<div class="h-10 w-10 rounded-full bg-cover bg-center bg-no-repeat ring-2 ring-offset-2 ring-transparent transition-all hover:ring-brand-primary" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCP2i297g7a9re99pvlscOC0r50FwiyXaMwvZvzK24SV_mcK4Nuaj-_MoxRMW2PMkBP2Eu1WqvIi6z8trS7v-a5a0PIjuACf4T7YkKMpomW7GhiMsoSMfWt9DpVlANGbvv8bylOWKI4cHfTzSlJ8_-rWP8HTsTFjcFPK70zz9JlHfDhmiE0L6eUVO1Aodom01zpt5kUXbkK7qGqsGVmhZp9b7ex5v47-QbtwqSGXLDlrPKOFLEU-lVen0SuIDjvJcpqr6UzcjA_dKjd");'></div>
+</div>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="w-full max-w-4xl">
+<div class="mb-6 px-4">
+<nav class="flex items-center text-sm">
+<a class="font-medium text-text-secondary transition-colors hover:text-brand-primary" href="#">My Properties</a>
+<span class="mx-2 text-text-secondary">/</span>
+<span class="font-medium text-text-primary">123 Maple Drive</span>
+</nav>
+<h2 class="mt-2 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">123 Maple Drive</h2>
+</div>
+<div class="rounded-xl border border-border-primary bg-surface-primary shadow-lg">
+<div class="p-6 sm:p-8">
+<h3 class="text-xl font-bold leading-tight tracking-tight text-text-primary">Pack Progress</h3>
+<p class="mt-2 text-text-secondary">Here's a high-level overview of how your property pack is progressing.</p>
+</div>
+<div class="border-t border-border-primary p-6 sm:p-8">
+<div class="flex items-center justify-between">
+<p class="text-base font-medium leading-normal text-text-primary">Overall Completion</p>
+<p class="text-2xl font-bold text-brand-primary">75%</p>
+</div>
+<div class="mt-4 h-3 w-full rounded-full bg-brand-secondary">
+<div class="h-3 rounded-full bg-brand-primary" style="width: 75%;"></div>
+</div>
+<p class="mt-3 text-sm font-medium text-text-secondary">Great work! You're well on your way to a complete pack.</p>
+</div>
+<div class="border-t border-border-primary bg-surface-secondary/50 p-6 sm:p-8">
+<p class="text-sm text-text-secondary">
+                This progress bar shows the overall completion of your property pack. It includes all necessary documents and information required for a smooth sale. For a detailed
+                breakdown, please visit the
+                <a class="font-semibold text-brand-primary underline-offset-2 hover:underline" href="#">'My Pack'</a>
+                section.
+              </p>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,202 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B600%3B700&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Paperwurks - Pack Progress Tracker</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+      :root {
+        --primary-50: #eef6ff;
+        --primary-100: #dbeaff;
+        --primary-200: #bedfff;
+        --primary-300: #93c6ff;
+        --primary-400: #60a5fa;
+        --primary-500: #3b82f6;
+        --primary-600: #2563eb;
+        --primary-700: #1d4ed8;
+        --primary-800: #1e40af;
+        --primary-900: #1e3a8a;
+        --primary-950: #172554;
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --slate-700: #334155;
+        --slate-800: #1e293b;
+        --slate-900: #0f172a;
+        --slate-950: #020617;
+      }
+      body {
+        font-family: 'Inter', 'Noto Sans', sans-serif;
+      }
+    </style>
+</head>
+<body class="bg-[var(--slate-50)] text-[var(--slate-900)]">
+<div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--slate-200)] px-10 py-3">
+<div class="flex items-center gap-4">
+<svg class="h-6 w-6 text-[var(--primary-600)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_6_330)">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</g>
+<defs>
+<clipPath id="clip0_6_330"><rect fill="white" height="48" width="48"></rect></clipPath>
+</defs>
+</svg>
+<h2 class="text-lg font-bold tracking-tight text-[var(--slate-900)]">Paperwurks</h2>
+</div>
+<nav class="flex items-center gap-8">
+<a class="text-sm font-medium text-[var(--slate-700)] transition-colors hover:text-[var(--primary-600)]" href="#">Dashboard</a>
+<a class="text-sm font-medium text-[var(--primary-600)]" href="#">Properties</a>
+<a class="text-sm font-medium text-[var(--slate-700)] transition-colors hover:text-[var(--primary-600)]" href="#">Support</a>
+</nav>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<button class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[var(--slate-100)] text-[var(--slate-600)] transition-colors hover:bg-[var(--slate-200)] hover:text-[var(--slate-800)]">
+<svg fill="currentColor" height="20px" viewBox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path>
+</svg>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAe9i0taBLgrAE2kDutTxvXi5gryOWtlyt3c7oxmrSYeOBXiyyd6xo2-Q28u_cPhWLrzRoGQDoXVYrT6z9DVIGsVZvYl86uInP8c1WYP_urE48M0XG6h5R1O6wX7Dum8CjMlImrtlVXX2wTIWR0X8m8OUzrqkG7PNJhixq1JPAbgCffS9JiNSGbhpGrfK5vHKkTps-yaA6zhYEug0Kg_f2EOW_CgU0dFO9x3Ef5FDV7srJ9gJQSSo-dxYQTnya7xpih8sc8upmH3Xzr");'></div>
+</div>
+</header>
+<main class="flex-1 px-10 py-8 lg:px-20 xl:px-40">
+<div class="layout-content-container mx-auto flex max-w-5xl flex-col">
+<div class="mb-8">
+<div class="flex items-center gap-2 text-sm font-medium">
+<a class="text-[var(--slate-500)] hover:text-[var(--primary-600)]" href="#">Properties</a>
+<span class="text-[var(--slate-400)]">/</span>
+<span class="text-[var(--slate-800)]">123 High Street</span>
+</div>
+<div class="mt-4 flex flex-wrap items-end justify-between gap-4">
+<div>
+<h1 class="text-4xl font-bold tracking-tight text-[var(--slate-900)]">123 High Street</h1>
+<p class="mt-1 text-base text-[var(--slate-500)]">Pack Progress Tracker</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-sm text-[var(--slate-500)]">Last updated:</span>
+<span class="text-sm font-medium text-[var(--slate-700)]">2024-07-24, 10:30 AM</span>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-[var(--slate-200)] bg-white p-6 shadow-sm">
+<div class="mb-4">
+<div class="flex justify-between items-baseline mb-1">
+<p class="text-sm font-medium text-[var(--slate-700)]">Pack Completion</p>
+<p class="text-lg font-semibold text-[var(--primary-600)]">60%</p>
+</div>
+<div class="h-2.5 w-full rounded-full bg-[var(--slate-200)]">
+<div class="h-2.5 rounded-full bg-[var(--primary-600)]" style="width: 60%"></div>
+</div>
+</div>
+<div class="mt-8">
+<h2 class="text-xl font-bold tracking-tight text-[var(--slate-800)]">Key Milestones</h2>
+<div class="relative mt-6 flow-root">
+<div aria-hidden="true" class="absolute left-4 top-0 h-full w-0.5 -translate-x-1/2 bg-[var(--slate-200)]"></div>
+<ul class="-mb-8" role="list">
+<li class="relative pb-8">
+<div class="relative flex items-start space-x-4">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-600)] ring-8 ring-white">
+<svg aria-hidden="true" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="min-w-0 flex-1 pt-1.5">
+<p class="text-sm font-semibold text-[var(--slate-800)]">Instruction Received</p>
+<p class="mt-1 text-sm text-[var(--slate-500)]">2024-07-15</p>
+</div>
+</div>
+</li>
+<li class="relative pb-8">
+<div class="relative flex items-start space-x-4">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-600)] ring-8 ring-white">
+<svg aria-hidden="true" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="min-w-0 flex-1 pt-1.5">
+<p class="text-sm font-semibold text-[var(--slate-800)]">Legal Searches Initiated</p>
+<p class="mt-1 text-sm text-[var(--slate-500)]">2024-07-16</p>
+</div>
+</div>
+</li>
+<li class="relative pb-8">
+<div class="relative flex items-start space-x-4">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-600)] ring-8 ring-white">
+<svg aria-hidden="true" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="min-w-0 flex-1 pt-1.5">
+<p class="text-sm font-semibold text-[var(--slate-800)]">Builder's Report Commissioned</p>
+<p class="mt-1 text-sm text-[var(--slate-500)]">2024-07-17</p>
+</div>
+</div>
+</li>
+<li class="relative pb-8">
+<div class="relative flex items-start space-x-4">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--slate-300)] ring-8 ring-white">
+<svg aria-hidden="true" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="min-w-0 flex-1 pt-1.5">
+<p class="text-sm font-semibold text-[var(--slate-800)]">Draft Pack Assembled</p>
+<p class="mt-1 text-sm text-[var(--slate-500)]">In Progress</p>
+</div>
+</div>
+</li>
+<li class="relative pb-0">
+<div class="relative flex items-start space-x-4">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--slate-300)] ring-8 ring-white">
+<svg aria-hidden="true" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="min-w-0 flex-1 pt-1.5">
+<p class="text-sm font-semibold text-[var(--slate-800)]">Pack Ready for Distribution</p>
+<p class="mt-1 text-sm text-[var(--slate-500)]">Pending</p>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="mt-10">
+<h2 class="text-xl font-bold tracking-tight text-[var(--slate-800)]">Detailed Status</h2>
+<div class="mt-4 border-t border-[var(--slate-200)]">
+<dl class="divide-y divide-[var(--slate-200)]">
+<div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+<dt class="text-sm font-medium text-[var(--slate-600)]">Legal Searches</dt>
+<dd class="mt-1 text-sm text-[var(--slate-900)] sm:col-span-2 sm:mt-0">In Progress</dd>
+</div>
+<div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+<dt class="text-sm font-medium text-[var(--slate-600)]">Builder's Report</dt>
+<dd class="mt-1 text-sm text-[var(--slate-900)] sm:col-span-2 sm:mt-0">Completed</dd>
+</div>
+<div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+<dt class="text-sm font-medium text-[var(--slate-600)]">Energy Performance Certificate (EPC)</dt>
+<dd class="mt-1 text-sm text-[var(--slate-900)] sm:col-span-2 sm:mt-0">Completed</dd>
+</div>
+<div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+<dt class="text-sm font-medium text-[var(--slate-600)]">Local Authority Enquiries</dt>
+<dd class="mt-1 text-sm text-[var(--slate-900)] sm:col-span-2 sm:mt-0">Awaiting Response</dd>
+</div>
+<div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+<dt class="text-sm font-medium text-[var(--slate-600)]">Water and Drainage Searches</dt>
+<dd class="mt-1 text-sm text-[var(--slate-900)] sm:col-span-2 sm:mt-0">Completed</dd>
+</div>
+</dl>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</body></html>
